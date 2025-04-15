@@ -85,6 +85,7 @@ const StakeForm = () => {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [ethToSwETHRate, setEthToSwETHRate] = useState<string>("0");
   const [isProcessing, setIsProcessing] = useState(false);
+  const [apr, setApr] = useState<string>("0.00");
 
   const { address, isConnected } = useAccount();
   const { writeContractAsync } = useWriteContract();
@@ -135,7 +136,7 @@ const StakeForm = () => {
       const rate = await publicClient?.readContract({
         address: "0xf951E335afb289353dc249e82926178EaC7DEd78",
         abi: implementedContractABI,
-        functionName: "ethToSwETHRate",
+        functionName: "swETHToETHRate",
       }) as bigint;
 
       if (rate) {
@@ -147,6 +148,19 @@ const StakeForm = () => {
       console.error("Error fetching ETH to swETH rate:", error);
     }
   }, [publicClient]);
+
+  const fetchApr = useCallback(async () => {
+    try {
+      const response = await fetch('https://v3-lst.svc.swellnetwork.io/api/tokens/sweth/apr');
+      const aprText = await response.text();
+      const aprNumber = parseFloat(aprText);
+      setApr(aprNumber.toFixed(2));
+      console.log("APR:", aprText);
+    } catch (error) {
+      console.error("Error fetching APR:", error);
+      setApr("0.00");
+    }
+  }, []);
 
   useEffect(() => {
     const fetchPrices = async () => {
@@ -164,7 +178,8 @@ const StakeForm = () => {
     fetchPrices();
     fetchBalances();
     fetchWinkpoints();
-  }, [fetchEthToSwETHRate, fetchWinkpoints]);
+    fetchApr();
+  }, [fetchEthToSwETHRate, fetchWinkpoints, fetchApr]);
 
   const fetchBalances = async () => {
     if (!address) return;
@@ -444,21 +459,17 @@ const StakeForm = () => {
           <div className=" ">
             <div className=" flex justify-between font-medium">
               <p>swETH APR</p>
-              <p>3.94%</p>
+              <p>{apr}%</p>
             </div>
             <div className=" flex justify-between font-medium">
-              <div className="text-base font-medium">Exchange rate</div>
+              <div className=" font-medium">Exchange rate</div>
               <div className="text-right">
-                <p className="text-white">1 ETH = {ethToSwETHRate ? Number(ethToSwETHRate).toFixed(6) : 'Loading...'} swETH</p>
+                <p className="text-white">1 swETH = {ethToSwETHRate ? Number(ethToSwETHRate).toFixed(6) : 'Loading...'} ETH</p>
               </div>
             </div>
             <div className=" flex justify-between font-medium">
               <p>Transaction fee</p>
               <p>$1.50 USD</p>
-            </div>
-            <div className=" flex justify-between font-medium">
-              <p>Processing time</p>
-              <p>~12 days</p>
             </div>
           </div>
         </div>
