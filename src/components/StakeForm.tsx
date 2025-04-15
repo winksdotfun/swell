@@ -3,7 +3,6 @@ import Custombutton from "./Wallet";
 import { useAccount, usePublicClient, useWriteContract, useBalance } from "wagmi";
 import { Wallet } from "lucide-react";
 import { ethers } from "ethers";
-import proxyContractABI from "../abi/ProxyContract.json";
 import implementedContractABI from "../abi/ImplementedContract.json";
 
 interface PriceData {
@@ -42,7 +41,7 @@ const SuccessModal = ({ isOpen, onClose, transactionHash, newPoints }: SuccessMo
               Close
             </button>
             <button
-              onClick={() => window.open(`https://sepolia.etherscan.io/tx/${transactionHash}`, '_blank')}
+              onClick={() => window.open(`https://etherscan.io/tx/${transactionHash}`, '_blank')}
               className="px-4 py-2 bg-[#2f44df] rounded-full hover:bg-[#1f2d8f] transition-colors"
             >
               View Transaction
@@ -221,7 +220,6 @@ const StakeForm = () => {
   const handleStakeClick = async () => {
     if (!address || !ethAmount) return;
     
-    setIsApproving(true);
     setError("");
     setTransactionHash(null);
     setShowSuccessModal(false);
@@ -230,24 +228,12 @@ const StakeForm = () => {
       const amountInWei = ethers.utils.parseEther(ethAmount);
       
       // First, approve the implementation contract to receive ETH
-      const approvalTx = await writeContractAsync({
-        address: SWETH_IMPLEMENTATION_ADDRESS,
-        abi: implementedContractABI,
-        functionName: "approve",
-        args: [
-          SWETH_IMPLEMENTATION_ADDRESS,
-          amountInWei.toBigInt()
-        ],
-        account: address as `0x${string}`,
-      });
 
-      await publicClient?.waitForTransactionReceipt({ hash: approvalTx });
-      setIsApproving(false);
 
       // After approval, execute the deposit
       setIsDepositing(true);
       const depositTx = await writeContractAsync({
-        address: SWETH_IMPLEMENTATION_ADDRESS,
+        address: "0xf951E335afb289353dc249e82926178EaC7DEd78",
         abi: implementedContractABI,
         functionName: "deposit",
         args: [], // No arguments needed for ETH deposit
