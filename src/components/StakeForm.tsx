@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import Custombutton from "./Wallet";
 import { useAccount, usePublicClient, useWriteContract, useBalance } from "wagmi";
-import { Wallet } from "lucide-react";
 import { ethers } from "ethers";
 import implementedContractABI from "../abi/ImplementedContract.json";
 
@@ -99,21 +98,21 @@ const StakeForm = () => {
 
   const fetchWinkpoints = useCallback(async () => {
     if (!address) return 0;
-  
+
     try {
       setIsLoading(true);
       const response = await fetch(
         `https://inner-circle-seven.vercel.app/api/action/getPoints?address=${address}`,
         { method: "GET" }
       );
-  
+
       if (!response.ok) {
         throw new Error(`Failed to fetch: ${response.statusText}`);
       }
-  
+
       const data = await response.json();
       console.log("Winkpoints data:", data);
-  
+
       if (data && data.points !== undefined) {
         setWinkpoints(data.points);
         return data.points;
@@ -204,7 +203,7 @@ const StakeForm = () => {
   const handleEthAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setEthAmount(value);
-    
+
     if (value && ethToSwETHRate) {
       const parsedValue = Number.parseFloat(value);
       const calculatedSweth = (parsedValue * Number(ethToSwETHRate)).toFixed(18);
@@ -214,7 +213,7 @@ const StakeForm = () => {
     }
   };
 
-    const updatePoints = async () => {
+  const updatePoints = async () => {
     try {
       const response = await fetch(
         "https://inner-circle-seven.vercel.app/api/action/setPoints",
@@ -228,14 +227,14 @@ const StakeForm = () => {
           }),
         }
       );
-  
+
       if (!response.ok) {
         throw new Error("Failed to update points");
       }
-  
+
       const data = await response.json();
       console.log("Points updated:", data);
-  
+
       setWinkpoints(0);
       fetchWinkpoints();
     } catch (error) {
@@ -264,7 +263,7 @@ const StakeForm = () => {
 
   const handleStakeClick = async () => {
     if (!address || !ethAmount) return;
-    
+
     setError("");
     setTransactionHash(null);
     setShowSuccessModal(true);
@@ -272,7 +271,7 @@ const StakeForm = () => {
 
     try {
       const amountInWei = ethers.utils.parseEther(ethAmount);
-      
+
       const depositTx = await writeContractAsync({
         address: "0xf951E335afb289353dc249e82926178EaC7DEd78",
         abi: implementedContractABI,
@@ -355,7 +354,7 @@ const StakeForm = () => {
 
   return (
     <>
-      <SuccessModal 
+      <SuccessModal
         isOpen={showSuccessModal}
         onClose={() => handleModalClose()}
         transactionHash={transactionHash}
@@ -375,12 +374,24 @@ const StakeForm = () => {
         </div>
 
         <div className="flex justify-between items-center mb-3">
+          
+          {/* <Wallet className="text-gray-400 h-5" /> */}
+          <p className="text-gray-400 border border-[#2f44df] rounded-full px-2 py-1">
+            ✓ Attested with Sign Protocol 
+            <a
+              href="https://sepolia.basescan.org/tx/0xe41df2467ed5313534c3b31d9b41f5641a79604f960551c739e1f0c1920facf5"
+              target="_blank"
+              rel="noopener noreferrer"
+              className=" text-[#2f44df] rounded-full px-2 py-1 underline"
+            >
+              View Attestation
+            </a>
+          </p>
           <div className="px-3 py-1 rounded-full border border-gray-600 text-gray-400">
-            {isConnected ? `${Number(balance?.formatted).toFixed(4)} ETH` : '- ETH'} Available
+            {isConnected ? `${Number(balance?.formatted).toFixed(4)} ETH` : '- ETH'}
           </div>
-          <Wallet className="text-gray-400 h-5" />
         </div>
-      
+
 
         <div className="">
           <div className="flex justify-between items-center mb-2">
@@ -445,8 +456,8 @@ const StakeForm = () => {
             </p> */}
           </div>
 
-          <button 
-            className="bg-[#2f44df] p-2 mt-3 w-full text-sm font-bold rounded-full cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center" 
+          <button
+            className="bg-[#2f44df] p-2 mt-3 w-full text-sm font-bold rounded-full cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center"
             disabled={isButtonDisabled()}
             onClick={handleStakeClick}
           >
