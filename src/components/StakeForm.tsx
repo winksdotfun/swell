@@ -319,7 +319,8 @@ const StakeForm = () => {
   const calculateDollarAmount = (amount: string, price: number | undefined) => {
     if (!amount || !price) return "$0.00";
     const parsedAmount = Number.parseFloat(amount);
-    return `$${(parsedAmount * price).toFixed(2)}`;
+    const dollarAmount = parsedAmount * price;
+    return dollarAmount < 0.01 ? "<$0.01" : `$${dollarAmount.toFixed(2)}`;
   };
 
   return (
