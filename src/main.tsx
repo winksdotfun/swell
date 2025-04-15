@@ -7,7 +7,7 @@ import { RainbowKitProvider } from "@rainbow-me/rainbowkit";
 import { WagmiProvider } from "wagmi";
 import { sepolia, mainnet } from "wagmi/chains";
 import { getDefaultConfig } from "@rainbow-me/rainbowkit";
-
+import { ReferrerTracker } from "./referrerTracker";
 
 const config = getDefaultConfig({
   appName: "My RainbowKit App",
@@ -24,6 +24,7 @@ createRoot(document.getElementById('root')!).render(
   <WagmiProvider config={config}>
     <QueryClientProvider client={queryClient}>
       <RainbowKitProvider>
+        {/* <ReferrerTracker />  */}
         <App />
       </RainbowKitProvider>
     </QueryClientProvider>
