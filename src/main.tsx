@@ -12,7 +12,7 @@ import { ReferrerTracker } from "./referrerTracker";
 const config = getDefaultConfig({
   appName: "My RainbowKit App",
   projectId: "YOUR_PROJECT_ID", // Replace with actual project ID
-  chains: [mainnet], // Chain configuration stays here
+  chains: [sepolia], // Chain configuration stays here
   ssr: true,
 });
 

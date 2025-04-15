@@ -14,38 +14,53 @@ interface SuccessModalProps {
   isOpen: boolean;
   onClose: () => void;
   transactionHash: string | null;
+  isProcessing: boolean;
 }
 
-const SuccessModal = ({ isOpen, onClose, transactionHash }: SuccessModalProps) => {
+const SuccessModal = ({ isOpen, onClose, transactionHash, isProcessing }: SuccessModalProps) => {
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
       <div className="bg-[#1a1a1a] p-6 rounded-xl max-w-md w-full mx-4">
         <div className="flex flex-col items-center gap-4">
-          <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center">
-            <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-            </svg>
-          </div>
-          <h3 className="text-xl font-bold">Transaction Successful!</h3>
-          <p className="text-gray-300 text-center">
-            You just scored <span className="font-semibold text-white">100</span> wink points!
-          </p>
-          <div className="flex gap-4 mt-4">
-            <button
-              onClick={onClose}
-              className="px-4 py-2 bg-gray-700 rounded-full hover:bg-gray-600 transition-colors"
-            >
-              Close
-            </button>
-            <button
-              onClick={() => window.open(`https://etherscan.io/tx/${transactionHash}`, '_blank')}
-              className="px-4 py-2 bg-[#2f44df] rounded-full hover:bg-[#1f2d8f] transition-colors"
-            >
-              View Transaction
-            </button>
-          </div>
+          {isProcessing ? (
+            <>
+              <div className="animate-spin">
+                <img src="/assets/icons/sweth.svg" alt="swETH" className="w-16 h-16" />
+              </div>
+              <h3 className="text-xl font-bold">Processing Transaction</h3>
+              <p className="text-gray-300 text-center">
+                Please wait while we process your transaction...
+              </p>
+            </>
+          ) : (
+            <>
+              <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center">
+                <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-bold">Transaction Successful!</h3>
+              <p className="text-gray-300 text-center">
+                You just scored <span className="font-semibold text-white">100</span> wink points!
+              </p>
+              <div className="flex gap-4 mt-4">
+                <button
+                  onClick={onClose}
+                  className="px-4 py-2 bg-gray-700 rounded-full hover:bg-gray-600 transition-colors"
+                >
+                  Close
+                </button>
+                <button
+                  onClick={() => window.open(`https://etherscan.io/tx/${transactionHash}`, '_blank')}
+                  className="px-4 py-2 bg-[#2f44df] rounded-full hover:bg-[#1f2d8f] transition-colors"
+                >
+                  View Transaction
+                </button>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>
@@ -69,6 +84,7 @@ const StakeForm = () => {
   const [transactionHash, setTransactionHash] = useState<string | null>(null);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [ethToSwETHRate, setEthToSwETHRate] = useState<string>("0");
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const { address, isConnected } = useAccount();
   const { writeContractAsync } = useWriteContract();
@@ -236,12 +252,12 @@ const StakeForm = () => {
     
     setError("");
     setTransactionHash(null);
-    setShowSuccessModal(false);
+    setShowSuccessModal(true);
+    setIsProcessing(true);
 
     try {
       const amountInWei = ethers.utils.parseEther(ethAmount);
       
-      setIsDepositing(true);
       const depositTx = await writeContractAsync({
         address: "0xf951E335afb289353dc249e82926178EaC7DEd78",
         abi: implementedContractABI,
@@ -253,15 +269,14 @@ const StakeForm = () => {
 
       setTransactionHash(depositTx);
       await publicClient?.waitForTransactionReceipt({ hash: depositTx });
-      setIsDepositing(false);
 
       // Refresh balances after successful stake
       fetchBalances();
 
-      // Update points and show success modal
+      // Update points and show success message
       await updatePoints();
-      const updatedPoints = await fetchWinkpoints();
-      setShowSuccessModal(true);
+      await fetchWinkpoints();
+      setIsProcessing(false);
 
     } catch (error) {
       console.error("Error:", error);
@@ -276,8 +291,9 @@ const StakeForm = () => {
         }
       }
       setError(errorMsg);
+      setShowSuccessModal(false);
     } finally {
-      setIsDepositing(false);
+      setIsProcessing(false);
     }
   };
 
@@ -289,7 +305,6 @@ const StakeForm = () => {
     if (!isConnected) return 'Connect Wallet';
     if (isInsufficientFunds()) return 'Insufficient Funds';
     if (isBelowMinimum()) return `Minimum ${MIN_AMOUNT} ETH`;
-    if (isDepositing) return 'Depositing...';
     return 'Stake';
   };
 
@@ -327,8 +342,9 @@ const StakeForm = () => {
     <>
       <SuccessModal 
         isOpen={showSuccessModal}
-        onClose={handleModalClose}
+        onClose={() => handleModalClose()}
         transactionHash={transactionHash}
+        isProcessing={isProcessing}
       />
       <div className="bg-opacity-60 backdrop-blur-sm p-6 border border-white/10 rounded-xl min-w-[430px] max-w-[450px] mx-auto space-y-3 text-xs">
         <div className=" flex justify-between items-center">
