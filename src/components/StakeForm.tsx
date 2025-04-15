@@ -68,17 +68,15 @@ const SuccessModal = ({ isOpen, onClose, transactionHash, isProcessing }: Succes
 
 // Contract addresses
 // const SWELL_PROXY_ADDRESS = "0xf951E335afb289353dc249e82926178EaC7DEd78" as const;
-const SWETH_IMPLEMENTATION_ADDRESS = "0xce95ba824ae9a4df9b303c0bbf4d605ba2affbfc" as const;
+// const SWETH_IMPLEMENTATION_ADDRESS = "0xce95ba824ae9a4df9b303c0bbf4d605ba2affbfc" as const;
 
 
 const StakeForm = () => {
   const [ethAmount, setEthAmount] = useState<string>("");
   const [swethAmount, setSwethAmount] = useState<string>("");
   const [priceData, setPriceData] = useState<PriceData | null>(null);
-  const [swEthBalance, setSwEthBalance] = useState<string>("0");
+  // const [swEthBalance, setSwEthBalance] = useState<string>("0");
   const [winkpoints, setWinkpoints] = useState<number>(0);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [isDepositing, setIsDepositing] = useState(false);
   const [error, setError] = useState<string>("");
   const [transactionHash, setTransactionHash] = useState<string | null>(null);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -92,7 +90,7 @@ const StakeForm = () => {
   const { data: balance } = useBalance({
     address: address,
     query: {
-      refetchInterval: 3000, // Refetch every 3 seconds
+      refetchInterval: 3000,
     }
   });
 
@@ -100,7 +98,7 @@ const StakeForm = () => {
     if (!address) return 0;
 
     try {
-      setIsLoading(true);
+      setIsProcessing(true);
       const response = await fetch(
         `https://inner-circle-seven.vercel.app/api/action/getPoints?address=${address}`,
         { method: "GET" }
@@ -126,7 +124,7 @@ const StakeForm = () => {
       setWinkpoints(0);
       return 0;
     } finally {
-      setIsLoading(false);
+      setIsProcessing(false);
     }
   }, [address]);
 
@@ -175,30 +173,30 @@ const StakeForm = () => {
 
     fetchEthToSwETHRate();
     fetchPrices();
-    fetchBalances();
+    // fetchBalances();
     fetchWinkpoints();
     fetchApr();
   }, [fetchEthToSwETHRate, fetchWinkpoints, fetchApr]);
 
-  const fetchBalances = async () => {
-    if (!address) return;
+  // const fetchBalances = async () => {
+  //   if (!address) return;
 
-    try {
-      const swEthBalance = await publicClient?.readContract({
-        address: SWETH_IMPLEMENTATION_ADDRESS,
-        abi: implementedContractABI,
-        functionName: "balanceOf",
-        args: [address],
-      });
+  //   try {
+  //     const swEthBalance = await publicClient?.readContract({
+  //       address: SWETH_IMPLEMENTATION_ADDRESS,
+  //       abi: implementedContractABI,
+  //       functionName: "balanceOf",
+  //       args: [address],
+  //     });
 
-      if (swEthBalance) {
-        setSwEthBalance(ethers.utils.formatUnits(swEthBalance.toString(), 18));
-      }
-    } catch (error) {
-      console.error("Error fetching balances:", error);
-      setSwEthBalance("0");
-    }
-  };
+  //     if (swEthBalance) {
+  //       setSwEthBalance(ethers.utils.formatUnits(swEthBalance.toString(), 18));
+  //     }
+  //   } catch (error) {
+  //     console.error("Error fetching balances:", error);
+  //     setSwEthBalance("0");
+  //   }
+  // };
 
   const handleEthAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -285,7 +283,7 @@ const StakeForm = () => {
       await publicClient?.waitForTransactionReceipt({ hash: depositTx });
 
       // Refresh balances after successful stake
-      fetchBalances();
+      // fetchBalances();
 
       // Update points and show success message
       await updatePoints();
@@ -323,7 +321,7 @@ const StakeForm = () => {
   };
 
   const getButtonContent = () => {
-    if (isDepositing) {
+    if (isProcessing) {
       return (
         <div className="flex items-center justify-center gap-2">
           <Loader />
@@ -335,7 +333,7 @@ const StakeForm = () => {
   };
 
   const isButtonDisabled = () => {
-    return !isConnected || isInsufficientFunds() || isBelowMinimum() || !ethAmount || isDepositing;
+    return !isConnected || isInsufficientFunds() || isBelowMinimum() || !ethAmount || isProcessing;
   };
 
   const handleModalClose = () => {
@@ -364,7 +362,7 @@ const StakeForm = () => {
         <div className=" flex justify-between items-center">
           <div className="flex items-center gap-2">
             <p>Wink Points:</p>
-            {isLoading ? (
+            {isProcessing ? (
               <div className="animate-pulse h-4 w-8 bg-gray-700 rounded"></div>
             ) : (
               <p>{winkpoints}</p>
