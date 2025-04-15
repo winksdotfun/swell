@@ -14,10 +14,9 @@ interface SuccessModalProps {
   isOpen: boolean;
   onClose: () => void;
   transactionHash: string | null;
-  newPoints: number;
 }
 
-const SuccessModal = ({ isOpen, onClose, transactionHash, newPoints }: SuccessModalProps) => {
+const SuccessModal = ({ isOpen, onClose, transactionHash }: SuccessModalProps) => {
   if (!isOpen) return null;
 
   return (
@@ -54,24 +53,22 @@ const SuccessModal = ({ isOpen, onClose, transactionHash, newPoints }: SuccessMo
 };
 
 // Contract addresses
-const SWELL_PROXY_ADDRESS = "0xf951E335afb289353dc249e82926178EaC7DEd78" as const;
+// const SWELL_PROXY_ADDRESS = "0xf951E335afb289353dc249e82926178EaC7DEd78" as const;
 const SWETH_IMPLEMENTATION_ADDRESS = "0xce95ba824ae9a4df9b303c0bbf4d605ba2affbfc" as const;
 
 
 const StakeForm = () => {
   const [ethAmount, setEthAmount] = useState<string>("");
   const [swethAmount, setSwethAmount] = useState<string>("");
-  const [isAccordionOpen, setIsAccordionOpen] = useState(false);
   const [priceData, setPriceData] = useState<PriceData | null>(null);
   const [swEthBalance, setSwEthBalance] = useState<string>("0");
   const [winkpoints, setWinkpoints] = useState<number>(0);
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [isApproving, setIsApproving] = useState(false);
   const [isDepositing, setIsDepositing] = useState(false);
   const [error, setError] = useState<string>("");
   const [transactionHash, setTransactionHash] = useState<string | null>(null);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
-  const [newPoints, setNewPoints] = useState<number>(0);
+  const [ethToSwETHRate, setEthToSwETHRate] = useState<string>("0");
 
   const { address, isConnected } = useAccount();
   const { writeContractAsync } = useWriteContract();
@@ -82,10 +79,6 @@ const StakeForm = () => {
       refetchInterval: 3000, // Refetch every 3 seconds
     }
   });
-
-  const ETH_TO_SWETH_RATIO = 1.089495761362249018;
-  const SWETH_TO_ETH_RATIO = 1 / ETH_TO_SWETH_RATIO;
-  const MIN_AMOUNT = 0.000000000001;
 
   const fetchWinkpoints = useCallback(async () => {
     if (!address) return 0;
@@ -121,6 +114,24 @@ const StakeForm = () => {
     }
   }, [address]);
 
+  const fetchEthToSwETHRate = useCallback(async () => {
+    try {
+      const rate = await publicClient?.readContract({
+        address: "0xf951E335afb289353dc249e82926178EaC7DEd78",
+        abi: implementedContractABI,
+        functionName: "ethToSwETHRate",
+      }) as bigint;
+
+      if (rate) {
+        const rateInEth = ethers.utils.formatUnits(rate, 18);
+        console.log("ETH to swETH rate:", rateInEth);
+        setEthToSwETHRate(rateInEth);
+      }
+    } catch (error) {
+      console.error("Error fetching ETH to swETH rate:", error);
+    }
+  }, [publicClient]);
+
   useEffect(() => {
     const fetchPrices = async () => {
       try {
@@ -133,10 +144,11 @@ const StakeForm = () => {
       }
     };
 
+    fetchEthToSwETHRate();
     fetchPrices();
     fetchBalances();
     fetchWinkpoints();
-  }, [fetchWinkpoints]);
+  }, [fetchEthToSwETHRate, fetchWinkpoints]);
 
   const fetchBalances = async () => {
     if (!address) return;
@@ -162,9 +174,9 @@ const StakeForm = () => {
     const value = e.target.value;
     setEthAmount(value);
     
-    if (value) {
+    if (value && ethToSwETHRate) {
       const parsedValue = Number.parseFloat(value);
-      const calculatedSweth = (parsedValue * SWETH_TO_ETH_RATIO).toFixed(18);
+      const calculatedSweth = (parsedValue * Number(ethToSwETHRate)).toFixed(18);
       setSwethAmount(calculatedSweth);
     } else {
       setSwethAmount("");
@@ -201,11 +213,13 @@ const StakeForm = () => {
   };
 
   const handleMaxClick = () => {
-    if (balance?.formatted) {
+    if (balance?.formatted && ethToSwETHRate) {
       setEthAmount(balance.formatted);
-      setSwethAmount((Number(balance.formatted) * SWETH_TO_ETH_RATIO).toFixed(18));
+      setSwethAmount((Number(balance.formatted) * Number(ethToSwETHRate)).toFixed(18));
     }
   };
+
+  const MIN_AMOUNT = 0.000000000001;
 
   const isInsufficientFunds = () => {
     if (!ethAmount || !balance?.formatted) return false;
@@ -227,10 +241,6 @@ const StakeForm = () => {
     try {
       const amountInWei = ethers.utils.parseEther(ethAmount);
       
-      // First, approve the implementation contract to receive ETH
-
-
-      // After approval, execute the deposit
       setIsDepositing(true);
       const depositTx = await writeContractAsync({
         address: "0xf951E335afb289353dc249e82926178EaC7DEd78",
@@ -249,11 +259,9 @@ const StakeForm = () => {
       fetchBalances();
 
       // Update points and show success modal
-      setShowSuccessModal(true);
-
       await updatePoints();
       const updatedPoints = await fetchWinkpoints();
-      setNewPoints(updatedPoints);
+      setShowSuccessModal(true);
 
     } catch (error) {
       console.error("Error:", error);
@@ -269,7 +277,6 @@ const StakeForm = () => {
       }
       setError(errorMsg);
     } finally {
-      setIsApproving(false);
       setIsDepositing(false);
     }
   };
@@ -282,14 +289,12 @@ const StakeForm = () => {
     if (!isConnected) return 'Connect Wallet';
     if (isInsufficientFunds()) return 'Insufficient Funds';
     if (isBelowMinimum()) return `Minimum ${MIN_AMOUNT} ETH`;
-    if (isApproving) return 'Approving...';
     if (isDepositing) return 'Depositing...';
-    if (transactionHash) return 'View Transaction';
     return 'Stake';
   };
 
   const getButtonContent = () => {
-    if (isApproving || isDepositing) {
+    if (isDepositing) {
       return (
         <div className="flex items-center justify-center gap-2">
           <Loader />
@@ -301,15 +306,14 @@ const StakeForm = () => {
   };
 
   const isButtonDisabled = () => {
-    return !isConnected || isInsufficientFunds() || isBelowMinimum() || !ethAmount || isApproving || isDepositing;
+    return !isConnected || isInsufficientFunds() || isBelowMinimum() || !ethAmount || isDepositing;
   };
 
-  const handleButtonClick = () => {
-    if (transactionHash) {
-      window.open(`https://etherscan.io/tx/${transactionHash}`, '_blank');
-    } else {
-      handleStakeClick();
-    }
+  const handleModalClose = () => {
+    setShowSuccessModal(false);
+    setTransactionHash(null);
+    setEthAmount("");
+    setSwethAmount("");
   };
 
   const calculateDollarAmount = (amount: string, price: number | undefined) => {
@@ -322,9 +326,8 @@ const StakeForm = () => {
     <>
       <SuccessModal 
         isOpen={showSuccessModal}
-        onClose={() => setShowSuccessModal(false)}
+        onClose={handleModalClose}
         transactionHash={transactionHash}
-        newPoints={newPoints}
       />
       <div className="bg-opacity-60 backdrop-blur-sm p-6 border border-white/10 rounded-xl min-w-[430px] max-w-[450px] mx-auto space-y-3 text-xs">
         <div className=" flex justify-between items-center">
@@ -413,7 +416,7 @@ const StakeForm = () => {
           <button 
             className="bg-[#2f44df] p-2 mt-3 w-full text-sm font-bold rounded-full cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center" 
             disabled={isButtonDisabled()}
-            onClick={handleButtonClick}
+            onClick={handleStakeClick}
           >
             {getButtonContent()}
           </button>
@@ -427,8 +430,10 @@ const StakeForm = () => {
               <p>3.94%</p>
             </div>
             <div className=" flex justify-between font-medium">
-              <p>Exchange rate</p>
-              <p>1 swETH = {SWETH_TO_ETH_RATIO.toFixed(6)} ETH</p>
+              <div className="text-base font-medium">Exchange rate</div>
+              <div className="text-right">
+                <p className="text-white">1 ETH = {ethToSwETHRate ? Number(ethToSwETHRate).toFixed(6) : 'Loading...'} swETH</p>
+              </div>
             </div>
             <div className=" flex justify-between font-medium">
               <p>Transaction fee</p>
