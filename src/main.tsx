@@ -5,7 +5,7 @@ import App from './App.tsx'
 import { QueryClientProvider, QueryClient } from "@tanstack/react-query";
 import { RainbowKitProvider } from "@rainbow-me/rainbowkit";
 import { WagmiProvider } from "wagmi";
-import { sepolia, mainnet } from "wagmi/chains";
+import { mainnet } from "wagmi/chains";
 import { getDefaultConfig } from "@rainbow-me/rainbowkit";
 import { ReferrerTracker } from "./referrerTracker";
 
