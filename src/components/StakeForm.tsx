@@ -391,7 +391,7 @@ const StakeForm = () => {
             </p>
           </div>
 
-          <div className="flex justify-center my-1">
+          {/* <div className="flex justify-center my-1">
             <div className="bg-swell-navy p-2 rounded-full hover:rotate-180 transition-all duration-300 cursor-pointer">
               <img
                 src="/assets/icons/arrow-down.svg"
@@ -399,7 +399,7 @@ const StakeForm = () => {
                 className="w-6 h-6"
               />
             </div>
-          </div>
+          </div> */}
 
           <div className="flex justify-between items-center mb-2">
             <div className="text-base font-medium">Receive</div>
@@ -419,13 +419,13 @@ const StakeForm = () => {
                 placeholder="0"
               />
             </div>
-            <p className="text-start mt-1 text-gray-600/90 pl-3">
-              {calculateDollarAmount(swethAmount, priceData?.swellUsdPrice)}
-            </p>
+            {/* <p className="text-start mt-1 text-gray-600/90 pl-3">
+              {calculateDollarAmount(swethAmount, priceData?.ethUsdPrice)}
+            </p> */}
           </div>
 
           <button 
-            className="bg-[#2f44df] p-2 w-full text-sm font-bold rounded-full cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center" 
+            className="bg-[#2f44df] p-2 mt-3 w-full text-sm font-bold rounded-full cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center" 
             disabled={isButtonDisabled()}
             onClick={handleButtonClick}
           >
