@@ -11,4 +11,12 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  server: {
+    allowedHosts: [
+      "cb48-38-134-138-249.ngrok-free.app",
+      "localhost",
+      "127.0.0.1",
+      "sweth.winks.fun"
+    ]
+  }
 })
