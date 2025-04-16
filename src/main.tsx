@@ -10,8 +10,8 @@ import { getDefaultConfig } from "@rainbow-me/rainbowkit";
 import { ReferrerTracker } from "./referrerTracker";
 const config = getDefaultConfig({
   appName: "My RainbowKit App",
-  projectId: "YOUR_PROJECT_ID", // Replace with actual project ID
-  chains: [mainnet], // Chain configuration stays here
+  projectId: "YOUR_PROJECT_ID", 
+  chains: [mainnet], 
   ssr: true,
 });
 
