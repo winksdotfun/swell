@@ -7,7 +7,6 @@ import { RainbowKitProvider } from "@rainbow-me/rainbowkit";
 import { WagmiProvider } from "wagmi";
 import { mainnet } from "wagmi/chains";
 import { getDefaultConfig } from "@rainbow-me/rainbowkit";
-import { ReferrerTracker } from "./referrerTracker";
 
 const config = getDefaultConfig({
   appName: "My RainbowKit App",
