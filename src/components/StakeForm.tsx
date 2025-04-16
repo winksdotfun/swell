@@ -476,10 +476,10 @@ const StakeForm = () => {
                 <p className="text-white">1 swETH = {ethToSwETHRate ? Number(ethToSwETHRate).toFixed(6) : 'Loading...'} ETH</p>
               </div>
             </div>
-            <div className=" flex justify-between font-medium">
+            {/* <div className=" flex justify-between font-medium">
               <p>Transaction fee</p>
               <p>$1.50 USD</p>
-            </div>
+            </div> */}
           </div>
         </div>
         <div className="border-t border-white/10 mt-1"></div>
