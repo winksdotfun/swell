@@ -79,7 +79,7 @@ body {
   background:
     radial-gradient(circle at 20% 35%, rgba(47, 68, 223, 0.15) 0%, rgba(12, 19, 55, 0) 45%),
     radial-gradient(circle at 85% 20%, rgba(47, 68, 223, 0.1) 0%, rgba(12, 19, 55, 0) 50%);
-  background-color: #040815;
+  background-color: #ffffff;
 }
 
 .swell-bg::after {

@@ -20,16 +20,16 @@ const SuccessModal = ({ isOpen, onClose, transactionHash, isProcessing }: Succes
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-[#1a1a1a] p-6 rounded-xl max-w-md w-full mx-4">
+    <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50">
+      <div className="bg-white p-6 rounded-xl max-w-md w-full mx-4 shadow-xl">
         <div className="flex flex-col items-center gap-4">
           {isProcessing ? (
             <>
               <div className="animate-spin">
                 <img src="/assets/icons/sweth.svg" alt="swETH" className="w-16 h-16" />
               </div>
-              <h3 className="text-xl font-bold">Processing Transaction</h3>
-              <p className="text-gray-300 text-center">
+              <h3 className="text-xl font-bold text-gray-800">Processing Transaction</h3>
+              <p className="text-gray-600 text-center">
                 Please wait while we process your transaction...
               </p>
             </>
@@ -40,20 +40,20 @@ const SuccessModal = ({ isOpen, onClose, transactionHash, isProcessing }: Succes
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
                 </svg>
               </div>
-              <h3 className="text-xl font-bold">Transaction Successful!</h3>
-              <p className="text-gray-300 text-center">
-                You just scored <span className="font-semibold text-white">100</span> wink points!
+              <h3 className="text-xl font-bold text-gray-800">Transaction Successful!</h3>
+              <p className="text-gray-600 text-center">
+                You just scored <span className="font-semibold text-[#2f44df]">100</span> wink points!
               </p>
               <div className="flex gap-4 mt-4">
                 <button
                   onClick={onClose}
-                  className="px-4 py-2 bg-gray-700 rounded-full hover:bg-gray-600 transition-colors"
+                  className="px-4 py-2 bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200 transition-colors"
                 >
                   Close
                 </button>
                 <button
                   onClick={() => window.open(`https://etherscan.io/tx/${transactionHash}`, '_blank')}
-                  className="px-4 py-2 bg-[#2f44df] rounded-full hover:bg-[#1f2d8f] transition-colors"
+                  className="px-4 py-2 bg-[#2f44df] text-white rounded-full hover:bg-[#1f2d8f] transition-colors"
                 >
                   View Transaction
                 </button>
@@ -358,104 +358,88 @@ const StakeForm = () => {
         transactionHash={transactionHash}
         isProcessing={isProcessing}
       />
-      <div className="bg-opacity-60 backdrop-blur-sm p-6 border border-white/10 rounded-xl min-w-[430px] max-w-[450px] mx-auto space-y-3 text-xs">
-        <div className=" flex justify-between items-center">
+      <div className="bg-white/80 backdrop-blur-sm p-6 border border-gray-200 rounded-xl min-w-[430px] max-w-[450px] mx-auto space-y-3 text-xs shadow-lg">
+        <div className="flex justify-between items-center">
           <div className="flex items-center gap-2">
-            <p>Wink Points:</p>
+            <p className="text-gray-700">Wink Points:</p>
             {isProcessing ? (
-              <div className="animate-pulse h-4 w-8 bg-gray-700 rounded"></div>
+              <div className="animate-pulse h-4 w-8 bg-gray-200 rounded"></div>
             ) : (
-              <p>{winkpoints}</p>
+              <p className="text-gray-800">{winkpoints}</p>
             )}
           </div>
           <Custombutton />
         </div>
 
         <div className="flex justify-between items-center mb-3">
-          
-          {/* <Wallet className="text-gray-400 h-5" /> */}
-          <p className="text-gray-400 border border-[#2f44df] rounded-full px-2 py-1">
+          <p className="text-gray-600 border border-[#2f44df] rounded-full px-2 py-1">
             ✓ Attested with Sign Protocol 
             <a
               href="https://sepolia.basescan.org/tx/0xe41df2467ed5313534c3b31d9b41f5641a79604f960551c739e1f0c1920facf5"
               target="_blank"
               rel="noopener noreferrer"
-              className=" text-[#2f44df] rounded-full px-2 py-1 underline"
+              className="text-[#2f44df] rounded-full px-2 py-1 underline"
             >
               View Attestation
             </a>
           </p>
-          <div className="px-3 py-1 rounded-full border border-gray-600 text-gray-400">
+          <div className="px-3 py-1 rounded-full border border-gray-300 text-gray-700">
             {isConnected ? `${Number(balance?.formatted).toFixed(4)} ETH` : '- ETH'}
           </div>
         </div>
 
-
         <div className="">
           <div className="flex justify-between items-center mb-2">
-            <div className="text-base font-medium">Stake</div>
+            <div className="text-base font-medium text-gray-800">Stake</div>
             <div className="flex items-center gap-2">
               <img src="/assets/icons/eth.svg" alt="ETH" className="w-8 h-8" />
-              <div className="font-medium">ETH</div>
+              <div className="font-medium text-gray-800">ETH</div>
             </div>
           </div>
 
           <div className="">
-            <div className="bg-[#2f44df]/10 p-2 rounded-xl flex">
+            <div className="bg-gray-50 p-2 rounded-xl flex border border-gray-200">
               <input
                 type="text"
                 value={ethAmount}
                 onChange={handleEthAmountChange}
-                className="w-full text-base font-medium bg-transparent focus:outline-none p-2"
+                className="w-full text-base font-medium bg-transparent focus:outline-none p-2 text-gray-800"
                 placeholder="0"
               />
               <button
-                className="border-[#2f44df] border text-[#2f44df] px-3 rounded-xl cursor-pointer"
+                className="border-[#2f44df] border text-[#2f44df] px-3 rounded-xl cursor-pointer hover:bg-[#2f44df]/5 transition-colors"
                 onClick={handleMaxClick}
               >
                 MAX
               </button>
             </div>
-            <p className="text-start mt-1 text-gray-600/90 pl-3">
+            <p className="text-start mt-1 text-gray-500 pl-3">
               {calculateDollarAmount(ethAmount, priceData?.ethUsdPrice)}
             </p>
           </div>
 
-          {/* <div className="flex justify-center my-1">
-            <div className="bg-swell-navy p-2 rounded-full hover:rotate-180 transition-all duration-300 cursor-pointer">
-              <img
-                src="/assets/icons/arrow-down.svg"
-                alt="arrow"
-                className="w-6 h-6"
-              />
-            </div>
-          </div> */}
-
-          <div className="flex justify-between items-center mb-2">
-            <div className="text-base font-medium">Receive</div>
+          <div className="flex justify-between items-center mb-2 mt-4">
+            <div className="text-base font-medium text-gray-800">Receive</div>
             <div className="flex items-center gap-2">
               <img src="/assets/icons/sweth.svg" alt="swETH" className="w-8 h-8" />
-              <div className="font-medium">swETH</div>
+              <div className="font-medium text-gray-800">swETH</div>
             </div>
           </div>
 
           <div className="">
-            <div className="bg-[#2f44df]/10 p-2 rounded-xl flex">
+            <div className="bg-gray-50 p-2 rounded-xl flex border border-gray-200">
               <input
                 type="text"
                 value={swethAmount}
                 readOnly
-                className="w-full text-base font-medium bg-transparent focus:outline-none p-2"
+                className="w-full text-base font-medium bg-transparent focus:outline-none p-2 text-gray-800"
                 placeholder="0"
               />
             </div>
-            {/* <p className="text-start mt-1 text-gray-600/90 pl-3">
-              {calculateDollarAmount(swethAmount, priceData?.ethUsdPrice)}
-            </p> */}
           </div>
 
           <button
-            className="bg-[#2f44df] p-2 mt-3 w-full text-sm font-bold rounded-full cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center"
+            className="bg-[#2f44df] p-2 mt-3 w-full text-sm font-bold rounded-full cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center text-white hover:bg-[#1f2d8f] transition-colors"
             disabled={isButtonDisabled()}
             onClick={handleStakeClick}
           >
@@ -464,26 +448,22 @@ const StakeForm = () => {
           {error && (
             <p className="text-red-500 text-sm mt-2">{error}</p>
           )}
-          <div className="border-b border-[#2f44df] my-1"></div>
-          <div className=" ">
-            <div className=" flex justify-between font-medium">
-              <p>swETH APR</p>
-              <p>{apr}%</p>
+          <div className="border-b border-gray-200 my-1"></div>
+          <div className="">
+            <div className="flex justify-between font-medium">
+              <p className="text-gray-700">swETH APR</p>
+              <p className="text-gray-800">{apr}%</p>
             </div>
-            <div className=" flex justify-between font-medium">
-              <div className=" font-medium">Exchange rate</div>
+            <div className="flex justify-between font-medium">
+              <div className="font-medium text-gray-700">Exchange rate</div>
               <div className="text-right">
-                <p className="text-white">1 swETH = {ethToSwETHRate ? Number(ethToSwETHRate).toFixed(6) : 'Loading...'} ETH</p>
+                <p className="text-gray-800">1 swETH = {ethToSwETHRate ? Number(ethToSwETHRate).toFixed(6) : 'Loading...'} ETH</p>
               </div>
             </div>
-            {/* <div className=" flex justify-between font-medium">
-              <p>Transaction fee</p>
-              <p>$1.50 USD</p>
-            </div> */}
           </div>
         </div>
-        <div className="border-t border-white/10 mt-1"></div>
-        <p className=' text-white text-center'>Powered by winks.fun</p>
+        <div className="border-t border-gray-200 mt-1"></div>
+        <p className="text-gray-600 text-center">Powered by winks.fun</p>
       </div>
     </>
   );
