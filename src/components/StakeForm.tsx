@@ -131,14 +131,14 @@ const StakeForm = () => {
   const fetchEthToSwETHRate = useCallback(async () => {
     try {
       const rate = await publicClient?.readContract({
-        address: "0xf951E335afb289353dc249e82926178EaC7DEd78",
+        address: "0xFAe103DC9cf190eD75350761e95403b7b8aFa6c0",
         abi: implementedContractABI,
-        functionName: "swETHToETHRate",
+        functionName: "ethToRswETHRate",
       }) as bigint;
 
       if (rate) {
         const rateInEth = ethers.utils.formatUnits(rate, 18);
-        console.log("ETH to swETH rate:", rateInEth);
+        console.log("ETH to rswETH rate:", rateInEth);
         setEthToSwETHRate(rateInEth);
       }
     } catch (error) {
@@ -148,7 +148,7 @@ const StakeForm = () => {
 
   const fetchApr = useCallback(async () => {
     try {
-      const response = await fetch('https://v3-lst.svc.swellnetwork.io/api/tokens/sweth/apr');
+      const response = await fetch('https://v3-lrt.svc.swellnetwork.io/api/tokens/rsweth/apr');
       const aprText = await response.text();
       const aprNumber = parseFloat(aprText);
       setApr(aprNumber.toFixed(2));
@@ -271,7 +271,7 @@ const StakeForm = () => {
       const amountInWei = ethers.utils.parseEther(ethAmount);
 
       const depositTx = await writeContractAsync({
-        address: "0xf951E335afb289353dc249e82926178EaC7DEd78",
+        address: "0xFAe103DC9cf190eD75350761e95403b7b8aFa6c0",
         abi: implementedContractABI,
         functionName: "deposit",
         args: [], // No arguments needed for ETH deposit
@@ -407,7 +407,7 @@ const StakeForm = () => {
                 placeholder="0"
               />
               <button
-                className="border-[#2f44df] border text-[#2f44df] px-3 rounded-xl cursor-pointer hover:bg-[#2f44df]/5 transition-colors"
+                className="border-[#FFD700] border text-[#000000] px-3 rounded-xl cursor-pointer hover:bg-[#FFD700]/5 transition-colors"
                 onClick={handleMaxClick}
               >
                 MAX
@@ -421,8 +421,8 @@ const StakeForm = () => {
           <div className="flex justify-between items-center mb-2 mt-4">
             <div className="text-base font-medium text-gray-800">Receive</div>
             <div className="flex items-center gap-2">
-              <img src="/assets/icons/sweth.svg" alt="swETH" className="w-8 h-8" />
-              <div className="font-medium text-gray-800">swETH</div>
+              <img src="/assets/icons/rswETH.webp" alt="swETH" className="w-8 h-8" />
+              <div className="font-medium text-gray-800">rswETH</div>
             </div>
           </div>
 
@@ -439,7 +439,7 @@ const StakeForm = () => {
           </div>
 
           <button
-            className="bg-[#2f44df] p-2 mt-3 w-full text-sm font-bold rounded-full cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center text-white hover:bg-[#1f2d8f] transition-colors"
+            className="bg-[#FFD700] p-2 mt-3 w-full text-sm font-bold rounded-full cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center text-black hover:bg-[#FFD700]/70 transition-colors"
             disabled={isButtonDisabled()}
             onClick={handleStakeClick}
           >
@@ -451,13 +451,13 @@ const StakeForm = () => {
           <div className="border-b border-gray-200 my-1"></div>
           <div className="">
             <div className="flex justify-between font-medium">
-              <p className="text-gray-700">swETH APR</p>
+              <p className="text-gray-700">rswETH APR</p>
               <p className="text-gray-800">{apr}%</p>
             </div>
             <div className="flex justify-between font-medium">
               <div className="font-medium text-gray-700">Exchange rate</div>
               <div className="text-right">
-                <p className="text-gray-800">1 swETH = {ethToSwETHRate ? Number(ethToSwETHRate).toFixed(6) : 'Loading...'} ETH</p>
+                <p className="text-gray-800">1 ETH = {ethToSwETHRate ? Number(ethToSwETHRate).toFixed(6) : 'Loading...'} rswETH</p>
               </div>
             </div>
           </div>

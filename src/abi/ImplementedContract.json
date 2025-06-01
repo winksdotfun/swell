@@ -33,7 +33,7 @@
     },
     {
         "inputs": [],
-        "name": "CannotBurnZeroSwETH",
+        "name": "CannotBurnZeroRswETH",
         "type": "error"
     },
     {
@@ -43,12 +43,28 @@
     },
     {
         "inputs": [],
-        "name": "CannotRepriceWithZeroSwETHSupply",
+        "name": "CannotRepriceWithZeroRswETHSupply",
         "type": "error"
     },
     {
         "inputs": [],
         "name": "CoreMethodsPaused",
+        "type": "error"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "rswETHAmount",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "minRswETH",
+                "type": "uint256"
+            }
+        ],
+        "name": "InsufficientRswETHReceived",
         "type": "error"
     },
     {
@@ -85,6 +101,11 @@
     {
         "inputs": [],
         "name": "NotInWhitelist",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "OnlyDepositManager",
         "type": "error"
     },
     {
@@ -144,16 +165,16 @@
         "inputs": [
             {
                 "internalType": "uint256",
-                "name": "repriceswETHDiff",
+                "name": "repriceRswETHDiff",
                 "type": "uint256"
             },
             {
                 "internalType": "uint256",
-                "name": "maximumswETHRepriceDiff",
+                "name": "maximumRswETHRepriceDiff",
                 "type": "uint256"
             }
         ],
-        "name": "RepriceswETHDifferenceTooLarge",
+        "name": "RepriceRswETHDifferenceTooLarge",
         "type": "error"
     },
     {
@@ -213,6 +234,31 @@
         "anonymous": false,
         "inputs": [
             {
+                "indexed": false,
+                "internalType": "address",
+                "name": "_receiver",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "_ethSpent",
+                "type": "uint256"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "_rswETHReceived",
+                "type": "uint256"
+            }
+        ],
+        "name": "DepoistManagerDeposit",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
                 "indexed": true,
                 "internalType": "address",
                 "name": "from",
@@ -227,7 +273,7 @@
             {
                 "indexed": false,
                 "internalType": "uint256",
-                "name": "swETHMinted",
+                "name": "rswETHMinted",
                 "type": "uint256"
             },
             {
@@ -258,7 +304,7 @@
             {
                 "indexed": false,
                 "internalType": "uint256",
-                "name": "swETHBurned",
+                "name": "rswETHBurned",
                 "type": "uint256"
             },
             {
@@ -309,17 +355,17 @@
             {
                 "indexed": false,
                 "internalType": "uint256",
-                "name": "_oldMaximumRepriceswETHDifferencePercentage",
+                "name": "_oldMaximumRepriceRswETHDifferencePercentage",
                 "type": "uint256"
             },
             {
                 "indexed": false,
                 "internalType": "uint256",
-                "name": "_newMaximumRepriceswETHDifferencePercentage",
+                "name": "_newMaximumRepriceRswETHDifferencePercentage",
                 "type": "uint256"
             }
         ],
-        "name": "MaximumRepriceswETHDifferencePercentageUpdated",
+        "name": "MaximumRepriceRswETHDifferencePercentageUpdated",
         "type": "event"
     },
     {
@@ -385,7 +431,7 @@
             {
                 "indexed": false,
                 "internalType": "uint256",
-                "name": "newSwETHToETHRate",
+                "name": "newRswETHToETHRate",
                 "type": "uint256"
             },
             {
@@ -649,6 +695,29 @@
     {
         "inputs": [
             {
+                "internalType": "uint256",
+                "name": "_amount",
+                "type": "uint256"
+            },
+            {
+                "internalType": "address",
+                "name": "_to",
+                "type": "address"
+            },
+            {
+                "internalType": "uint256",
+                "name": "_minRswETH",
+                "type": "uint256"
+            }
+        ],
+        "name": "depositViaDepositManager",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
                 "internalType": "address",
                 "name": "referral",
                 "type": "address"
@@ -675,7 +744,7 @@
     },
     {
         "inputs": [],
-        "name": "ethToSwETHRate",
+        "name": "ethToRswETHRate",
         "outputs": [
             {
                 "internalType": "uint256",
@@ -777,7 +846,7 @@
     },
     {
         "inputs": [],
-        "name": "maximumRepriceswETHDifferencePercentage",
+        "name": "maximumRepriceRswETHDifferencePercentage",
         "outputs": [
             {
                 "internalType": "uint256",
@@ -854,13 +923,26 @@
             },
             {
                 "internalType": "uint256",
-                "name": "_swETHTotalSupply",
+                "name": "_rswETHTotalSupply",
                 "type": "uint256"
             }
         ],
         "name": "reprice",
         "outputs": [],
         "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "rswETHToETHRate",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
         "type": "function"
     },
     {
@@ -880,11 +962,11 @@
         "inputs": [
             {
                 "internalType": "uint256",
-                "name": "_maximumRepriceswETHDifferencePercentage",
+                "name": "_maximumRepriceRswETHDifferencePercentage",
                 "type": "uint256"
             }
         ],
-        "name": "setMaximumRepriceswETHDifferencePercentage",
+        "name": "setMaximumRepriceRswETHDifferencePercentage",
         "outputs": [],
         "stateMutability": "nonpayable",
         "type": "function"
@@ -926,19 +1008,6 @@
         "name": "setSwellTreasuryRewardPercentage",
         "outputs": [],
         "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "swETHToETHRate",
-        "outputs": [
-            {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
-            }
-        ],
-        "stateMutability": "view",
         "type": "function"
     },
     {
