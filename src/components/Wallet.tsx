@@ -41,7 +41,7 @@ const Custombutton = () => {
                 return (
                   <>
                     <button
-                      className="bg-[#FFD700] text-black p-2 rounded-xl cursor-pointer"
+                      className="bg-[#2F43EC] text-white p-2 rounded-xl cursor-pointer"
                       onClick={openConnectModal}
                       type="button"
                     >
@@ -68,7 +68,7 @@ const Custombutton = () => {
               return (
                 <div className="">
                   <button
-                    className="bg-[#FFD700] text-black p-2 rounded-xl cursor-pointer"
+                    className="bg-[#2F43EC] text-white p-2 rounded-xl cursor-pointer"
                     onClick={openAccountModal}
                     type="button"
                   >

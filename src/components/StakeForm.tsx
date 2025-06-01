@@ -392,8 +392,8 @@ const StakeForm = () => {
           <div className="flex justify-between items-center mb-2">
             <div className="text-base font-medium text-gray-800">Stake</div>
             <div className="flex items-center gap-2">
-              <img src="/assets/icons/eth.svg" alt="ETH" className="w-8 h-8" />
-              <div className="font-medium text-gray-800">ETH</div>
+              <img src="/assets/icons/swell-icon.png" alt="ETH" className="w-8 h-8" />
+              <div className="font-medium text-gray-800">SWELL</div>
             </div>
           </div>
 
@@ -407,7 +407,7 @@ const StakeForm = () => {
                 placeholder="0"
               />
               <button
-                className="border-[#FFD700] border text-[#000000] px-3 rounded-xl cursor-pointer hover:bg-[#FFD700]/5 transition-colors"
+                className="border-[#2F43EC] border text-[#000000] px-3 rounded-xl cursor-pointer hover:bg-[#2F43EC]/5 transition-colors"
                 onClick={handleMaxClick}
               >
                 MAX
@@ -421,8 +421,8 @@ const StakeForm = () => {
           <div className="flex justify-between items-center mb-2 mt-4">
             <div className="text-base font-medium text-gray-800">Receive</div>
             <div className="flex items-center gap-2">
-              <img src="/assets/icons/rswETH.webp" alt="swETH" className="w-8 h-8" />
-              <div className="font-medium text-gray-800">rswETH</div>
+              <img src="/assets/icons/rswell-icon.webp" alt="swETH" className="w-8 h-8" />
+              <div className="font-medium text-gray-800">rSWELL</div>
             </div>
           </div>
 
@@ -439,7 +439,7 @@ const StakeForm = () => {
           </div>
 
           <button
-            className="bg-[#FFD700] p-2 mt-3 w-full text-sm font-bold rounded-full cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center text-black hover:bg-[#FFD700]/70 transition-colors"
+            className="bg-[#2F43EC] p-2 mt-3 w-full text-sm font-bold rounded-full cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center text-white hover:bg-[#2F43EC]/70 transition-colors"
             disabled={isButtonDisabled()}
             onClick={handleStakeClick}
           >
