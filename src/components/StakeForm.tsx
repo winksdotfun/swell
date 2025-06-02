@@ -277,8 +277,8 @@ const StakeForm = () => {
   const MIN_AMOUNT = 0.000000000000001;
 
   const isInsufficientFunds = () => {
-    if (!ethAmount || !balance?.formatted) return false;
-    return Number(ethAmount) > Number(balance.formatted);
+    if (!ethAmount || !wbtcBalance) return false;
+    return Number(ethAmount) > Number(wbtcBalance);
   };
 
   const isBelowMinimum = () => {
