@@ -84,12 +84,6 @@ const StakeForm = () => {
   const { address, isConnected } = useAccount();
   const { writeContractAsync } = useWriteContract();
   const publicClient = usePublicClient();
-  const { data: balance } = useBalance({
-    address: address,
-    query: {
-      refetchInterval: 3000,
-    }
-  });
 
   const fetchWinkpoints = useCallback(async () => {
     if (!address) return 0;
