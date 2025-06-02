@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Custombutton from "./Wallet";
 import { useAccount, usePublicClient, useWriteContract, useBalance } from "wagmi";
-import { ethers } from "ethers";
+import { ethers, constants } from "ethers";
 import implementedContractABI from "../abi/ImplementedContract.json";
 import ProxyContract from "../abi/ProxyContract.json";
 
@@ -295,15 +295,48 @@ const StakeForm = () => {
     setIsProcessing(true);
 
     try {
-      const amountInWei = ethers.utils.parseEther(ethAmount);
+      // wBTC uses 8 decimals
+      const amountInWeiBigNumber = ethers.utils.parseUnits(ethAmount, 8);
+      const amountInWei = BigInt(amountInWeiBigNumber.toString());
 
+      // 1. Check allowance
+      let allowanceBigInt: bigint = BigInt(0);
+      const allowance = await publicClient?.readContract({
+        address: WBTC_ADDRESS,
+        abi: ProxyContract,
+        functionName: "allowance",
+        args: [address, "0x975304c676eb3dc86cd336138328e107a95eaa50"]
+      });
+
+      if (typeof allowance === 'bigint') {
+        allowanceBigInt = allowance;
+      } else if (typeof allowance === 'string' || typeof allowance === 'number') {
+        allowanceBigInt = BigInt(allowance);
+      } else if (allowance != null && typeof allowance === 'object' && 'toString' in allowance) {
+        allowanceBigInt = BigInt(allowance.toString());
+      }
+
+      // 2. If allowance is not enough, approve MaxUint256
+      if (allowanceBigInt < amountInWei) {
+        setIsProcessing(true);
+        // Approve MaxUint256 for best UX
+        const approveTx = await writeContractAsync({
+          address: WBTC_ADDRESS,
+          abi: ProxyContract,
+          functionName: "approve",
+          args: ["0x975304c676eb3dc86cd336138328e107a95eaa50", constants.MaxUint256],
+          account: address as `0x${string}`
+        });
+        await publicClient?.waitForTransactionReceipt({ hash: approveTx });
+      }
+
+      // 3. Now call deposit
       const depositTx = await writeContractAsync({
         address: "0x975304c676eb3dc86cd336138328e107a95eaa50",
         abi: implementedContractABI,
         functionName: "deposit",
-        args: [], // No arguments needed for ETH deposit
-        account: address as `0x${string}`,
-        value: amountInWei.toBigInt()
+        args: [amountInWei, address], // Pass amount and receiver
+        account: address as `0x${string}`
       });
 
       setTransactionHash(depositTx);
