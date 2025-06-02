@@ -85,12 +85,7 @@ const StakeForm = () => {
   const { writeContractAsync } = useWriteContract();
   const publicClient = usePublicClient();
   // ETH balance (if needed for staking logic)
-  const { data: balance } = useBalance({
-    address: address,
-    query: {
-      refetchInterval: 3000,
-    }
-  });
+
   // wBTC balance state
   const [wbtcBalance, setWbtcBalance] = useState<string>("0");
 
