@@ -4,11 +4,6 @@ import { useAccount, usePublicClient, useWriteContract, useBalance } from "wagmi
 import { ethers } from "ethers";
 import implementedContractABI from "../abi/ImplementedContract.json";
 
-interface PriceData {
-  ethUsdPrice: number;
-  swellUsdPrice: number;
-}
-
 interface SuccessModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -74,7 +69,6 @@ const SuccessModal = ({ isOpen, onClose, transactionHash, isProcessing }: Succes
 const StakeForm = () => {
   const [ethAmount, setEthAmount] = useState<string>("");
   const [swethAmount, setSwethAmount] = useState<string>("");
-  const [priceData, setPriceData] = useState<PriceData | null>(null);
   // const [swEthBalance, setSwEthBalance] = useState<string>("0");
   const [winkpoints, setWinkpoints] = useState<number>(0);
   const [error, setError] = useState<string>("");
@@ -82,7 +76,6 @@ const StakeForm = () => {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [ethToSwETHRate, setEthToSwETHRate] = useState<string>("0");
   const [isProcessing, setIsProcessing] = useState(false);
-  const [apr, setApr] = useState<string>("0.00");
 
   const { address, isConnected } = useAccount();
   const { writeContractAsync } = useWriteContract();
@@ -131,11 +124,11 @@ const StakeForm = () => {
   const fetchEthToSwETHRate = useCallback(async () => {
     try {
       const rate = await publicClient?.readContract({
-        address: "0xFAe103DC9cf190eD75350761e95403b7b8aFa6c0",
+        address: "0xbb51273d6c746910c7c06fe718f30c936170fed0",
         abi: implementedContractABI,
         functionName: "ethToRswETHRate",
       }) as bigint;
-
+      console.log(swethAmount)
       if (rate) {
         const rateInEth = ethers.utils.formatUnits(rate, 18);
         console.log("ETH to rswETH rate:", rateInEth);
@@ -150,12 +143,9 @@ const StakeForm = () => {
     try {
       const response = await fetch('https://v3-lrt.svc.swellnetwork.io/api/tokens/rsweth/apr');
       const aprText = await response.text();
-      const aprNumber = parseFloat(aprText);
-      setApr(aprNumber.toFixed(2));
       console.log("APR:", aprText);
     } catch (error) {
       console.error("Error fetching APR:", error);
-      setApr("0.00");
     }
   }, []);
 
@@ -164,7 +154,6 @@ const StakeForm = () => {
       try {
         const response = await fetch('https://v3-lrt.svc.swellnetwork.io/swell.v3.StatsService/Prices?connect=v1&encoding=json&message=%7B%7D');
         const data = await response.json();
-        setPriceData(data);
         console.log('Price data:', data);
       } catch (error) {
         console.error('Error fetching prices:', error);
@@ -271,7 +260,7 @@ const StakeForm = () => {
       const amountInWei = ethers.utils.parseEther(ethAmount);
 
       const depositTx = await writeContractAsync({
-        address: "0xFAe103DC9cf190eD75350761e95403b7b8aFa6c0",
+        address: "0xbb51273d6c746910c7c06fe718f30c936170fed0",
         abi: implementedContractABI,
         functionName: "deposit",
         args: [], // No arguments needed for ETH deposit
@@ -343,12 +332,7 @@ const StakeForm = () => {
     setSwethAmount("");
   };
 
-  const calculateDollarAmount = (amount: string, price: number | undefined) => {
-    if (!amount || !price) return "$0.00";
-    const parsedAmount = Number.parseFloat(amount);
-    const dollarAmount = parsedAmount * price;
-    return dollarAmount < 0.01 ? "<$0.01" : `$${dollarAmount.toFixed(2)}`;
-  };
+
 
   return (
     <>
@@ -413,9 +397,6 @@ const StakeForm = () => {
                 MAX
               </button>
             </div>
-            <p className="text-start mt-1 text-gray-500 pl-3">
-              {calculateDollarAmount(ethAmount, priceData?.ethUsdPrice)}
-            </p>
           </div>
 
           <div className="flex justify-between items-center mb-2 mt-4">
@@ -430,7 +411,7 @@ const StakeForm = () => {
             <div className="bg-gray-50 p-2 rounded-xl flex border border-gray-200">
               <input
                 type="text"
-                value={swethAmount}
+                value={ethAmount}
                 readOnly
                 className="w-full text-base font-medium bg-transparent focus:outline-none p-2 text-gray-800"
                 placeholder="0"
@@ -452,12 +433,12 @@ const StakeForm = () => {
           <div className="">
             <div className="flex justify-between font-medium">
               <p className="text-gray-700">rswETH APR</p>
-              <p className="text-gray-800">{apr}%</p>
+              <p className="text-gray-800">TBD</p>
             </div>
             <div className="flex justify-between font-medium">
               <div className="font-medium text-gray-700">Exchange rate</div>
               <div className="text-right">
-                <p className="text-gray-800">1 ETH = {ethToSwETHRate ? Number(ethToSwETHRate).toFixed(6) : 'Loading...'} rswETH</p>
+                <p className="text-gray-800">1 rSWELL = 1SWELL</p>
               </div>
             </div>
           </div>
