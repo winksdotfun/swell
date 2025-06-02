@@ -3,6 +3,7 @@ import Custombutton from "./Wallet";
 import { useAccount, usePublicClient, useWriteContract, useBalance } from "wagmi";
 import { ethers } from "ethers";
 import implementedContractABI from "../abi/ImplementedContract.json";
+import ProxyContract from "../abi/ProxyContract.json";
 
 interface SuccessModalProps {
   isOpen: boolean;
@@ -65,6 +66,10 @@ const SuccessModal = ({ isOpen, onClose, transactionHash, isProcessing }: Succes
 // const SWELL_PROXY_ADDRESS = "0xf951E335afb289353dc249e82926178EaC7DEd78" as const;
 // const SWETH_IMPLEMENTATION_ADDRESS = "0xce95ba824ae9a4df9b303c0bbf4d605ba2affbfc" as const;
 
+// wBTC contract address on Ethereum mainnet
+const WBTC_ADDRESS = "0x2260fac5e5542a773aa44fbcfedf7c193bc2c599";
+// Minimal ERC20 ABI for balanceOf and decimals
+
 
 const StakeForm = () => {
   const [ethAmount, setEthAmount] = useState<string>("");
@@ -76,16 +81,18 @@ const StakeForm = () => {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [ethToSwETHRate, setEthToSwETHRate] = useState<string>("0");
   const [isProcessing, setIsProcessing] = useState(false);
-
   const { address, isConnected } = useAccount();
   const { writeContractAsync } = useWriteContract();
   const publicClient = usePublicClient();
+  // ETH balance (if needed for staking logic)
   const { data: balance } = useBalance({
     address: address,
     query: {
       refetchInterval: 3000,
     }
   });
+  // wBTC balance state
+  const [wbtcBalance, setWbtcBalance] = useState<string>("0");
 
   const fetchWinkpoints = useCallback(async () => {
     if (!address) return 0;
@@ -124,7 +131,7 @@ const StakeForm = () => {
   const fetchEthToSwETHRate = useCallback(async () => {
     try {
       const rate = await publicClient?.readContract({
-        address: "0xbb51273d6c746910c7c06fe718f30c936170fed0",
+        address: "0x975304c676eb3dc86cd336138328e107a95eaa50",
         abi: implementedContractABI,
         functionName: "ethToRswETHRate",
       }) as bigint;
@@ -166,6 +173,37 @@ const StakeForm = () => {
     fetchWinkpoints();
     fetchApr();
   }, [fetchEthToSwETHRate, fetchWinkpoints, fetchApr]);
+
+  useEffect(() => {
+    const fetchWbtcBalance = async () => {
+      if (!address || !publicClient) {
+        setWbtcBalance("0");
+        return;
+      }
+      try {
+        // Get decimals
+        const decimals = await publicClient.readContract({
+          address: WBTC_ADDRESS,
+          abi: ProxyContract,
+          functionName: "decimals"
+        });
+        // Get balance
+        const rawBalance = await publicClient.readContract({
+          address: WBTC_ADDRESS,
+          abi: ProxyContract,
+          functionName: "balanceOf",
+          args: [address]
+        });
+        console.log("rawBalance", rawBalance, "decimals", decimals);
+
+        setWbtcBalance(ethers.utils.formatUnits(rawBalance as bigint, decimals as number));
+        console.log(wbtcBalance)
+      } catch (err) {
+        setWbtcBalance("0");
+      }
+    };
+    fetchWbtcBalance();
+  }, [address, publicClient]);
 
   // const fetchBalances = async () => {
   //   if (!address) return;
@@ -230,9 +268,9 @@ const StakeForm = () => {
   };
 
   const handleMaxClick = () => {
-    if (balance?.formatted && ethToSwETHRate) {
-      setEthAmount(balance.formatted);
-      setSwethAmount((Number(balance.formatted) * Number(ethToSwETHRate)).toFixed(18));
+    if (wbtcBalance && ethToSwETHRate) {
+      setEthAmount(wbtcBalance);
+      setSwethAmount((Number(wbtcBalance) * Number(ethToSwETHRate)).toFixed(18));
     }
   };
 
@@ -260,7 +298,7 @@ const StakeForm = () => {
       const amountInWei = ethers.utils.parseEther(ethAmount);
 
       const depositTx = await writeContractAsync({
-        address: "0xbb51273d6c746910c7c06fe718f30c936170fed0",
+        address: "0x975304c676eb3dc86cd336138328e107a95eaa50",
         abi: implementedContractABI,
         functionName: "deposit",
         args: [], // No arguments needed for ETH deposit
@@ -368,7 +406,7 @@ const StakeForm = () => {
             </a>
           </p>
           <div className="px-3 py-1 rounded-full border border-gray-300 text-gray-700">
-            {isConnected ? `${Number(balance?.formatted).toFixed(4)} ETH` : '- ETH'}
+            {isConnected ? `${Number(wbtcBalance).toFixed(6)} wBTC` : '- wBTC'}
           </div>
         </div>
 
@@ -376,8 +414,8 @@ const StakeForm = () => {
           <div className="flex justify-between items-center mb-2">
             <div className="text-base font-medium text-gray-800">Stake</div>
             <div className="flex items-center gap-2">
-              <img src="/assets/icons/swell-icon.png" alt="ETH" className="w-8 h-8" />
-              <div className="font-medium text-gray-800">SWELL</div>
+              <img src="/assets/icons/wBTC.svg" alt="ETH" className="w-8 h-8" />
+              <div className="font-medium text-gray-800">wBTC</div>
             </div>
           </div>
 
@@ -391,7 +429,7 @@ const StakeForm = () => {
                 placeholder="0"
               />
               <button
-                className="border-[#2F43EC] border text-[#000000] px-3 rounded-xl cursor-pointer hover:bg-[#2F43EC]/5 transition-colors"
+                className="border-[#F7931A] border text-[#000000] px-3 rounded-xl cursor-pointer hover:bg-[#F7931A]/5 transition-colors"
                 onClick={handleMaxClick}
               >
                 MAX
@@ -402,8 +440,8 @@ const StakeForm = () => {
           <div className="flex justify-between items-center mb-2 mt-4">
             <div className="text-base font-medium text-gray-800">Receive</div>
             <div className="flex items-center gap-2">
-              <img src="/assets/icons/rswell-icon.webp" alt="swETH" className="w-8 h-8" />
-              <div className="font-medium text-gray-800">rSWELL</div>
+              <img src="/assets/icons/swbtc.webp" alt="swETH" className="w-8 h-8" />
+              <div className="font-medium text-gray-800">swBTC</div>
             </div>
           </div>
 
@@ -420,7 +458,7 @@ const StakeForm = () => {
           </div>
 
           <button
-            className="bg-[#2F43EC] p-2 mt-3 w-full text-sm font-bold rounded-full cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center text-white hover:bg-[#2F43EC]/70 transition-colors"
+            className="bg-[#F7931A] p-2 mt-3 w-full text-sm font-bold rounded-full cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center text-white hover:bg-[#F7931A]/70 transition-colors"
             disabled={isButtonDisabled()}
             onClick={handleStakeClick}
           >
@@ -432,13 +470,13 @@ const StakeForm = () => {
           <div className="border-b border-gray-200 my-1"></div>
           <div className="">
             <div className="flex justify-between font-medium">
-              <p className="text-gray-700">rswETH APR</p>
+              <p className="text-gray-700">swBTC APR</p>
               <p className="text-gray-800">TBD</p>
             </div>
             <div className="flex justify-between font-medium">
               <div className="font-medium text-gray-700">Exchange rate</div>
               <div className="text-right">
-                <p className="text-gray-800">1 rSWELL = 1SWELL</p>
+                <p className="text-gray-800">1 swBTC = 1 wBTC</p>
               </div>
             </div>
           </div>
