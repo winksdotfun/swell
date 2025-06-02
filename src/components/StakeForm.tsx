@@ -3,6 +3,7 @@ import Custombutton from "./Wallet";
 import { useAccount, usePublicClient, useWriteContract, useBalance } from "wagmi";
 import { ethers } from "ethers";
 import implementedContractABI from "../abi/ImplementedContract.json";
+import ProxyContract from "../abi/ProxyContract.json";
 
 interface SuccessModalProps {
   isOpen: boolean;
@@ -65,6 +66,8 @@ const SuccessModal = ({ isOpen, onClose, transactionHash, isProcessing }: Succes
 // const SWELL_PROXY_ADDRESS = "0xf951E335afb289353dc249e82926178EaC7DEd78" as const;
 // const SWETH_IMPLEMENTATION_ADDRESS = "0xce95ba824ae9a4df9b303c0bbf4d605ba2affbfc" as const;
 
+// SWELL token address
+const SWELL_ADDRESS = "0x0a6E7Ba5042B38349e437ec6Db6214AEC7B35676";
 
 const StakeForm = () => {
   const [ethAmount, setEthAmount] = useState<string>("");
@@ -76,6 +79,7 @@ const StakeForm = () => {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [ethToSwETHRate, setEthToSwETHRate] = useState<string>("0");
   const [isProcessing, setIsProcessing] = useState(false);
+  const [swellBalance, setSwellBalance] = useState<string>("0");
 
   const { address, isConnected } = useAccount();
   const { writeContractAsync } = useWriteContract();
@@ -167,6 +171,34 @@ const StakeForm = () => {
     fetchApr();
   }, [fetchEthToSwETHRate, fetchWinkpoints, fetchApr]);
 
+  useEffect(() => {
+    const fetchSwellBalance = async () => {
+      if (!address || !publicClient) {
+        setSwellBalance("0");
+        return;
+      }
+      try {
+        // Get decimals
+        const decimals = await publicClient.readContract({
+          address: SWELL_ADDRESS,
+          abi: ProxyContract,
+          functionName: "decimals"
+        });
+        // Get balance
+        const rawBalance = await publicClient.readContract({
+          address: SWELL_ADDRESS,
+          abi: ProxyContract,
+          functionName: "balanceOf",
+          args: [address]
+        });
+        setSwellBalance(ethers.utils.formatUnits(rawBalance as bigint, decimals as number));
+      } catch (err) {
+        setSwellBalance("0");
+      }
+    };
+    fetchSwellBalance();
+  }, [address, publicClient]);
+
   // const fetchBalances = async () => {
   //   if (!address) return;
 
@@ -230,17 +262,17 @@ const StakeForm = () => {
   };
 
   const handleMaxClick = () => {
-    if (balance?.formatted && ethToSwETHRate) {
-      setEthAmount(balance.formatted);
-      setSwethAmount((Number(balance.formatted) * Number(ethToSwETHRate)).toFixed(18));
+    if (swellBalance && ethToSwETHRate) {
+      setEthAmount(swellBalance);
+      setSwethAmount((Number(swellBalance) * Number(ethToSwETHRate)).toFixed(18));
     }
   };
 
   const MIN_AMOUNT = 0.000000000000001;
 
   const isInsufficientFunds = () => {
-    if (!ethAmount || !balance?.formatted) return false;
-    return Number(ethAmount) > Number(balance.formatted);
+    if (!ethAmount || !swellBalance) return false;
+    return Number(ethAmount) > Number(swellBalance);
   };
 
   const isBelowMinimum = () => {
@@ -367,8 +399,9 @@ const StakeForm = () => {
               View Attestation
             </a>
           </p>
+         
           <div className="px-3 py-1 rounded-full border border-gray-300 text-gray-700">
-            {isConnected ? `${Number(balance?.formatted).toFixed(4)} ETH` : '- ETH'}
+            {isConnected ? `${Number(swellBalance).toFixed(6)} SWELL` : '- SWELL'}
           </div>
         </div>
 
