@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from "react";
 import Custombutton from "./Wallet";
 import { useAccount, usePublicClient, useWriteContract, useBalance } from "wagmi";
-import { ethers } from "ethers";
+import { ethers, providers } from "ethers";
 import implementedContractABI from "../abi/ImplementedContract.json";
+import PointsContractABI from "../abi/PointsContract.json";
 
 interface PriceData {
   ethUsdPrice: number;
@@ -14,9 +15,12 @@ interface SuccessModalProps {
   onClose: () => void;
   transactionHash: string | null;
   isProcessing: boolean;
+  onClaim: () => Promise<void>;
+  isClaiming: boolean;
+  claimError: string;
 }
 
-const SuccessModal = ({ isOpen, onClose, transactionHash, isProcessing }: SuccessModalProps) => {
+const SuccessModal = ({ isOpen, transactionHash, isProcessing, onClaim, isClaiming, claimError }: SuccessModalProps) => {
   if (!isOpen) return null;
 
   return (
@@ -46,18 +50,24 @@ const SuccessModal = ({ isOpen, onClose, transactionHash, isProcessing }: Succes
               </p>
               <div className="flex gap-4 mt-4">
                 <button
-                  onClick={onClose}
-                  className="px-4 py-2 bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200 transition-colors"
+                  onClick={onClaim}
+                  className="px-4 py-2 bg-[#2f44df] cursor-pointer text-white rounded-full hover:bg-[#1f2d8f] transition-colors flex items-center justify-center min-w-[140px]"
+                  disabled={isClaiming}
                 >
-                  Close
+                  {isClaiming ? (
+                    <span className="flex items-center gap-2"><span className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" /> Claiming...</span>
+                  ) : (
+                    'Claim Transaction'
+                  )}
                 </button>
                 <button
                   onClick={() => window.open(`https://etherscan.io/tx/${transactionHash}`, '_blank')}
-                  className="px-4 py-2 bg-[#2f44df] text-white rounded-full hover:bg-[#1f2d8f] transition-colors"
+                  className="px-4 py-2 bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200 transition-colors"
                 >
                   View Transaction
                 </button>
               </div>
+              {claimError && <p className="text-red-500 text-sm mt-2">{claimError}</p>}
             </>
           )}
         </div>
@@ -83,6 +93,9 @@ const StakeForm = () => {
   const [ethToSwETHRate, setEthToSwETHRate] = useState<string>("0");
   const [isProcessing, setIsProcessing] = useState(false);
   const [apr, setApr] = useState<string>("0.00");
+  const [isClaiming, setIsClaiming] = useState(false);
+  const [claimError, setClaimError] = useState<string>("");
+
 
   const { address, isConnected } = useAccount();
   const { writeContractAsync } = useWriteContract();
@@ -100,7 +113,7 @@ const StakeForm = () => {
     try {
       setIsProcessing(true);
       const response = await fetch(
-        `https://inner-circle-seven.vercel.app/api/action/getPoints?address=${address}`,
+        `http://localhost:5001/api/action/fetchSwellPoints?useraddress=${address}`,
         { method: "GET" }
       );
 
@@ -214,14 +227,16 @@ const StakeForm = () => {
   const updatePoints = async () => {
     try {
       const response = await fetch(
-        "https://inner-circle-seven.vercel.app/api/action/setPoints",
+        "http://localhost:5001/api/action/updateSwellPoints",
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            to: address,
+            useraddress: address,
+            newpoints: 100,
+            txnhash: `https://etherscan.io/tx/${transactionHash}`
           }),
         }
       );
@@ -286,8 +301,8 @@ const StakeForm = () => {
       // fetchBalances();
 
       // Update points and show success message
-      await updatePoints();
-      await fetchWinkpoints();
+      // await updatePoints();
+      // await fetchWinkpoints();
       setIsProcessing(false);
 
     } catch (error) {
@@ -308,6 +323,52 @@ const StakeForm = () => {
       setIsProcessing(false);
     }
   };
+
+  const POINTS_CONTRACT_ADDRESS = "0x50Fe2A044ab8882208d70145F10E3D2eaF6cC59c";
+  // Claim points on SwellchainAdd commentMore actions
+  const handleClaim = async () => {
+    setIsClaiming(true);
+    setClaimError("");
+    try {
+      // Get user address first
+      const provider = new providers.Web3Provider(window.ethereum);
+      const signer = provider.getSigner();
+
+      // Switch to Swellchain if needed
+      await window.ethereum.request({
+        method: 'wallet_switchEthereumChain',
+        params: [{ chainId: '0x783' }], // 1923 in hex
+      });
+
+      // Initialize contract
+      const contract = new ethers.Contract(
+        POINTS_CONTRACT_ADDRESS, 
+        PointsContractABI, 
+        signer
+      );
+
+      // Call updated claimPoints with parameters
+      const tx = await contract.claimPoints(address, transactionHash);
+      await tx.wait();
+      
+      // Refresh points
+      await updatePoints();
+      setShowSuccessModal(false);
+
+    } catch (error: any) {
+      if (error.code === 4001) {
+        setClaimError("User rejected transaction");
+      } else if (error.message) {
+        setClaimError(error.message);
+      } else {
+        setClaimError("Claim failed");
+      }
+      console.error('Claim failed:', error);
+    } finally {
+      setIsClaiming(false);
+    }
+  };
+
 
   const Loader = () => (
     <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full mx-auto" />
@@ -357,6 +418,9 @@ const StakeForm = () => {
         onClose={() => handleModalClose()}
         transactionHash={transactionHash}
         isProcessing={isProcessing}
+        onClaim={handleClaim}
+        isClaiming={isClaiming}
+        claimError={claimError}
       />
       <div className="bg-white/80 backdrop-blur-sm p-6 border border-gray-200 rounded-xl min-w-[430px] max-w-[450px] mx-auto space-y-3 text-xs shadow-lg">
         <div className="flex justify-between items-center">
