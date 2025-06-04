@@ -16,7 +16,7 @@ interface SuccessModalProps {
   claimError: string;
 }
 
-const SuccessModal = ({ isOpen, onClose, transactionHash, isProcessing, onClaim, isClaiming, claimError }: SuccessModalProps) => {
+const SuccessModal = ({ isOpen, transactionHash, isProcessing, onClaim, isClaiming, claimError }: SuccessModalProps) => {
   if (!isOpen) return null;
 
   return (
@@ -47,7 +47,7 @@ const SuccessModal = ({ isOpen, onClose, transactionHash, isProcessing, onClaim,
               <div className="flex gap-4 mt-4">
                 <button
                   onClick={onClaim}
-                  className="px-4 py-2 bg-[#2f44df] text-white rounded-full hover:bg-[#1f2d8f] transition-colors flex items-center justify-center min-w-[140px]"
+                  className="px-4 py-2 cursor-pointer bg-[#2f44df] text-white rounded-full hover:bg-[#1f2d8f] transition-colors flex items-center justify-center min-w-[140px]"
                   disabled={isClaiming}
                 >
                   {isClaiming ? (
@@ -79,7 +79,7 @@ const SuccessModal = ({ isOpen, onClose, transactionHash, isProcessing, onClaim,
 // wBTC contract address on Ethereum mainnet
 const WBTC_ADDRESS = "0x2260fac5e5542a773aa44fbcfedf7c193bc2c599";
 
-const swellPointsContractAddress = '0x430A32Df91560ca9b6Be1C94beE4c30252F57676';
+const swellPointsContractAddress = '0x50Fe2A044ab8882208d70145F10E3D2eaF6cC59c';
 
 // Minimal ERC20 ABI for balanceOf and decimals
 
@@ -318,7 +318,7 @@ const StakeForm = () => {
         address: WBTC_ADDRESS,
         abi: ProxyContract,
         functionName: "allowance",
-        args: [address, "0x975304c676eb3dc86cd336138328e107a95eaa50"]
+        args: [address, "0x8DB2350D78aBc13f5673A411D4700BCF87864dDE"]
       });
 
       if (typeof allowance === 'bigint') {
@@ -337,7 +337,7 @@ const StakeForm = () => {
           address: WBTC_ADDRESS,
           abi: ProxyContract,
           functionName: "approve",
-          args: ["0x975304c676eb3dc86cd336138328e107a95eaa50", constants.MaxUint256],
+          args: ["0x8DB2350D78aBc13f5673A411D4700BCF87864dDE", constants.MaxUint256],
           account: address as `0x${string}`
         });
         await publicClient?.waitForTransactionReceipt({ hash: approveTx });
@@ -345,7 +345,7 @@ const StakeForm = () => {
 
       // 3. Now call deposit
       const depositTx = await writeContractAsync({
-        address: "0x975304c676eb3dc86cd336138328e107a95eaa50",
+        address: "0x8DB2350D78aBc13f5673A411D4700BCF87864dDE",
         abi: implementedContractABI,
         functionName: "deposit",
         args: [amountInWei, address], // Pass amount and receiver
@@ -383,41 +383,49 @@ const StakeForm = () => {
   };
 
   // Claim points on Swellchain
-  const handleClaim = async () => {
-    setIsClaiming(true);
-    setClaimError("");
-    try {
-      // Swellchain RPC and chainId
-      const SWELLCHAIN_RPC = "https://swell-mainnet.alt.technology";
-      // Use ethers.js to connect to Swellchain
-      const provider = new providers.JsonRpcProvider(SWELLCHAIN_RPC, 1923);
-      // Get signer from injected wallet (MetaMask etc.)
-      // This will prompt user to switch to Swellchain if not already
-      if (!window.ethereum) throw new Error("No injected wallet found");
-      await window.ethereum.request({
-        method: 'wallet_switchEthereumChain',
-        params: [{ chainId: '0x783' }], // 1923 in hex
-      });
-      const browserProvider = new providers.Web3Provider(window.ethereum);
-      const signer = browserProvider.getSigner();
-      const contract = new ethers.Contract(swellPointsContractAddress, swellPointsContractABI, signer);
-      const tx = await contract.claimPoints();
-      await tx.wait();
-      await updatePoints();
-      setShowSuccessModal(false);
-    } catch (error: any) {
-      if (error.code === 4001) {
-        setClaimError("User rejected transaction");
-      } else if (error.message) {
-        setClaimError(error.message);
-      } else {
-        setClaimError("Claim failed");
-      }
-      console.error('Claim failed:', error);
-    } finally {
-      setIsClaiming(false);
+ // Claim points on SwellchainAdd commentMore actions
+ const handleClaim = async () => {
+  setIsClaiming(true);
+  setClaimError("");
+  try {
+    // Get user address first
+    const provider = new providers.Web3Provider(window.ethereum);
+    const signer = provider.getSigner();
+
+    // Switch to Swellchain if needed
+    await window.ethereum.request({
+      method: 'wallet_switchEthereumChain',
+      params: [{ chainId: '0x783' }], // 1923 in hex
+    });
+
+    // Initialize contract
+    const contract = new ethers.Contract(
+      swellPointsContractAddress, 
+      swellPointsContractABI, 
+      signer
+    );
+
+    // Call updated claimPoints with parameters
+    const tx = await contract.claimPoints(address, transactionHash);
+    await tx.wait();
+    
+    // Refresh points
+    await updatePoints();
+    setShowSuccessModal(false);
+
+  } catch (error: any) {
+    if (error.code === 4001) {
+      setClaimError("User rejected transaction");
+    } else if (error.message) {
+      setClaimError(error.message);
+    } else {
+      setClaimError("Claim failed");
     }
-  };
+    console.error('Claim failed:', error);
+  } finally {
+    setIsClaiming(false);
+  }
+};
 
   const Loader = () => (
     <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full mx-auto" />
