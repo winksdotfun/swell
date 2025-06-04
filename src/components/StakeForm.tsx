@@ -111,7 +111,7 @@ const StakeForm = () => {
     try {
       setIsProcessing(true);
       const response = await fetch(
-        `http://localhost:5001/api/action/fetchSwellPoints?useraddress=${address}`,
+        `https://innercircle-swell.vercel.app/api/action/fetchSwellPoints?useraddress=${address}`,
         { method: "GET" }
       );
 
@@ -252,7 +252,7 @@ const StakeForm = () => {
   const updatePoints = async () => {
     try {
       const response = await fetch(
-        "http://localhost:5001/api/action/updateSwellPoints",
+        "https://innercircle-swell.vercel.app/api/action/updateSwellPoints",
         {
           method: "POST",
           headers: {
