@@ -1,18 +1,24 @@
 import { useState, useEffect, useCallback } from "react";
 import Custombutton from "./Wallet";
-import { useAccount, usePublicClient, useWriteContract, useBalance } from "wagmi";
-import { ethers } from "ethers";
+import { useAccount, usePublicClient, useWriteContract } from "wagmi";
+import { ethers, providers } from "ethers";
 import implementedContractABI from "../abi/ImplementedContract.json";
 import ProxyContract from "../abi/ProxyContract.json";
+import swellPointsContractABI from "../abi/PointsContract.json";
+
+
 
 interface SuccessModalProps {
   isOpen: boolean;
   onClose: () => void;
   transactionHash: string | null;
   isProcessing: boolean;
+  onClaim: () => Promise<void>;
+  isClaiming: boolean;
+  claimError: string;
 }
 
-const SuccessModal = ({ isOpen, onClose, transactionHash, isProcessing }: SuccessModalProps) => {
+const SuccessModal = ({ isOpen, transactionHash, isProcessing, onClaim, isClaiming, claimError }: SuccessModalProps) => {
   if (!isOpen) return null;
 
   return (
@@ -42,18 +48,24 @@ const SuccessModal = ({ isOpen, onClose, transactionHash, isProcessing }: Succes
               </p>
               <div className="flex gap-4 mt-4">
                 <button
-                  onClick={onClose}
-                  className="px-4 py-2 bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200 transition-colors"
+                  onClick={onClaim}
+                  className="px-4 py-2 bg-[#2f44df] cursor-pointer text-white rounded-full hover:bg-[#1f2d8f] transition-colors flex items-center justify-center min-w-[140px]"
+                  disabled={isClaiming}
                 >
-                  Close
+                  {isClaiming ? (
+                    <span className="flex items-center gap-2"><span className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" /> Claiming...</span>
+                  ) : (
+                    'Claim Transaction'
+                  )}
                 </button>
                 <button
                   onClick={() => window.open(`https://etherscan.io/tx/${transactionHash}`, '_blank')}
-                  className="px-4 py-2 bg-[#2f44df] text-white rounded-full hover:bg-[#1f2d8f] transition-colors"
+                  className="px-4 py-2 bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200 transition-colors"
                 >
                   View Transaction
                 </button>
               </div>
+              {claimError && <p className="text-red-500 text-sm mt-2">{claimError}</p>}
             </>
           )}
         </div>
@@ -68,6 +80,7 @@ const SuccessModal = ({ isOpen, onClose, transactionHash, isProcessing }: Succes
 
 // SWELL token address
 const SWELL_ADDRESS = "0x0a6E7Ba5042B38349e437ec6Db6214AEC7B35676";
+const swellPointsContractAddress = '0x50Fe2A044ab8882208d70145F10E3D2eaF6cC59c';
 
 const StakeForm = () => {
   const [ethAmount, setEthAmount] = useState<string>("");
@@ -81,6 +94,9 @@ const StakeForm = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [swellBalance, setSwellBalance] = useState<string>("0");
 
+  const [isClaiming, setIsClaiming] = useState(false);
+  const [claimError, setClaimError] = useState("");
+
   const { address, isConnected } = useAccount();
   const { writeContractAsync } = useWriteContract();
   const publicClient = usePublicClient();
@@ -91,7 +107,7 @@ const StakeForm = () => {
     try {
       setIsProcessing(true);
       const response = await fetch(
-        `https://inner-circle-seven.vercel.app/api/action/getPoints?address=${address}`,
+        `http://localhost:5001/api/action/fetchSwellPoints?useraddress=${address}`,
         { method: "GET" }
       );
 
@@ -229,14 +245,16 @@ const StakeForm = () => {
   const updatePoints = async () => {
     try {
       const response = await fetch(
-        "https://inner-circle-seven.vercel.app/api/action/setPoints",
+        "http://localhost:5001/api/action/updateSwellPoints",
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            to: address,
+            useraddress: address,
+            newpoints: 100,
+            txnhash: `https://etherscan.io/tx/${transactionHash}`
           }),
         }
       );
@@ -283,15 +301,39 @@ const StakeForm = () => {
     setIsProcessing(true);
 
     try {
-      const amountInWei = ethers.utils.parseEther(ethAmount);
+      if (!publicClient) throw new Error("No publicClient available");
+      const amountInWei = ethers.utils.parseUnits(ethAmount, 18);
+      const amountInWeiBigInt = BigInt(amountInWei.toString());
+      const spender = "0x358d94b5b2F147D741088803d932Acb566acB7B6"; // staking contract
 
+      // 1. Check allowance
+      const allowanceRaw = await publicClient.readContract({
+        address: SWELL_ADDRESS,
+        abi: ProxyContract,
+        functionName: "allowance",
+        args: [address, spender]
+      });
+      const allowance = BigInt(allowanceRaw as string);
+
+      if (allowance < amountInWeiBigInt) {
+        // 2. Approve MaxUint256 for best UX
+        const approveTx = await writeContractAsync({
+          address: SWELL_ADDRESS,
+          abi: ProxyContract,
+          functionName: "approve",
+          args: [spender, ethers.constants.MaxUint256],
+          account: address as `0x${string}`
+        });
+        await publicClient.waitForTransactionReceipt({ hash: approveTx });
+      }
+
+      // 3. Now call deposit
       const depositTx = await writeContractAsync({
-        address: "0xbb51273d6c746910c7c06fe718f30c936170fed0",
+        address: spender,
         abi: implementedContractABI,
         functionName: "deposit",
-        args: [], // No arguments needed for ETH deposit
-        account: address as `0x${string}`,
-        value: amountInWei.toBigInt()
+        args: [amountInWei, address],
+        account: address as `0x${string}`
       });
 
       setTransactionHash(depositTx);
@@ -301,8 +343,8 @@ const StakeForm = () => {
       // fetchBalances();
 
       // Update points and show success message
-      await updatePoints();
-      await fetchWinkpoints();
+      // await updatePoints();
+      // await fetchWinkpoints();
       setIsProcessing(false);
 
     } catch (error) {
@@ -323,6 +365,51 @@ const StakeForm = () => {
       setIsProcessing(false);
     }
   };
+
+  // Claim points on SwellchainAdd commentMore actions
+  const handleClaim = async () => {
+    setIsClaiming(true);
+    setClaimError("");
+    try {
+      // Get user address first
+      const provider = new providers.Web3Provider(window.ethereum);
+      const signer = provider.getSigner();
+
+      // Switch to Swellchain if needed
+      await window.ethereum.request({
+        method: 'wallet_switchEthereumChain',
+        params: [{ chainId: '0x783' }], // 1923 in hex
+      });
+
+      // Initialize contract
+      const contract = new ethers.Contract(
+        swellPointsContractAddress, 
+        swellPointsContractABI, 
+        signer
+      );
+
+      // Call updated claimPoints with parameters
+      const tx = await contract.claimPoints(address, transactionHash);
+      await tx.wait();
+      
+      // Refresh points
+      await updatePoints();
+      setShowSuccessModal(false);
+
+    } catch (error: any) {
+      if (error.code === 4001) {
+        setClaimError("User rejected transaction");
+      } else if (error.message) {
+        setClaimError(error.message);
+      } else {
+        setClaimError("Claim failed");
+      }
+      console.error('Claim failed:', error);
+    } finally {
+      setIsClaiming(false);
+    }
+  };
+
 
   const Loader = () => (
     <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full mx-auto" />
@@ -367,6 +454,9 @@ const StakeForm = () => {
         onClose={() => handleModalClose()}
         transactionHash={transactionHash}
         isProcessing={isProcessing}
+        onClaim={handleClaim}
+        isClaiming={isClaiming}
+        claimError={claimError}
       />
       <div className="bg-white/80 backdrop-blur-sm p-6 border border-gray-200 rounded-xl min-w-[430px] max-w-[450px] mx-auto space-y-3 text-xs shadow-lg">
         <div className="flex justify-between items-center">
