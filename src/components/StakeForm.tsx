@@ -1,18 +1,22 @@
 import { useState, useEffect, useCallback } from "react";
 import Custombutton from "./Wallet";
-import { useAccount, usePublicClient, useWriteContract, useBalance } from "wagmi";
-import { ethers, constants } from "ethers";
+import { useAccount, usePublicClient, useWriteContract } from "wagmi";
+import { ethers, constants, providers } from "ethers";
 import implementedContractABI from "../abi/ImplementedContract.json";
 import ProxyContract from "../abi/ProxyContract.json";
+import swellPointsContractABI from "../abi/PointsContract.json";
 
 interface SuccessModalProps {
   isOpen: boolean;
   onClose: () => void;
   transactionHash: string | null;
   isProcessing: boolean;
+  onClaim: () => Promise<void>;
+  isClaiming: boolean;
+  claimError: string;
 }
 
-const SuccessModal = ({ isOpen, onClose, transactionHash, isProcessing }: SuccessModalProps) => {
+const SuccessModal = ({ isOpen, onClose, transactionHash, isProcessing, onClaim, isClaiming, claimError }: SuccessModalProps) => {
   if (!isOpen) return null;
 
   return (
@@ -42,18 +46,24 @@ const SuccessModal = ({ isOpen, onClose, transactionHash, isProcessing }: Succes
               </p>
               <div className="flex gap-4 mt-4">
                 <button
-                  onClick={onClose}
-                  className="px-4 py-2 bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200 transition-colors"
+                  onClick={onClaim}
+                  className="px-4 py-2 bg-[#2f44df] text-white rounded-full hover:bg-[#1f2d8f] transition-colors flex items-center justify-center min-w-[140px]"
+                  disabled={isClaiming}
                 >
-                  Close
+                  {isClaiming ? (
+                    <span className="flex items-center gap-2"><span className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" /> Claiming...</span>
+                  ) : (
+                    'Claim Transaction'
+                  )}
                 </button>
                 <button
                   onClick={() => window.open(`https://etherscan.io/tx/${transactionHash}`, '_blank')}
-                  className="px-4 py-2 bg-[#2f44df] text-white rounded-full hover:bg-[#1f2d8f] transition-colors"
+                  className="px-4 py-2 bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200 transition-colors"
                 >
                   View Transaction
                 </button>
               </div>
+              {claimError && <p className="text-red-500 text-sm mt-2">{claimError}</p>}
             </>
           )}
         </div>
@@ -68,6 +78,9 @@ const SuccessModal = ({ isOpen, onClose, transactionHash, isProcessing }: Succes
 
 // wBTC contract address on Ethereum mainnet
 const WBTC_ADDRESS = "0x2260fac5e5542a773aa44fbcfedf7c193bc2c599";
+
+const swellPointsContractAddress = '0x430A32Df91560ca9b6Be1C94beE4c30252F57676';
+
 // Minimal ERC20 ABI for balanceOf and decimals
 
 
@@ -89,13 +102,16 @@ const StakeForm = () => {
   // wBTC balance state
   const [wbtcBalance, setWbtcBalance] = useState<string>("0");
 
+  const [isClaiming, setIsClaiming] = useState(false);
+  const [claimError, setClaimError] = useState("");
+
   const fetchWinkpoints = useCallback(async () => {
     if (!address) return 0;
 
     try {
       setIsProcessing(true);
       const response = await fetch(
-        `https://inner-circle-seven.vercel.app/api/action/getPoints?address=${address}`,
+        `http://localhost:5001/api/action/fetchSwellPoints?useraddress=${address}`,
         { method: "GET" }
       );
 
@@ -236,14 +252,16 @@ const StakeForm = () => {
   const updatePoints = async () => {
     try {
       const response = await fetch(
-        "https://inner-circle-seven.vercel.app/api/action/setPoints",
+        "http://localhost:5001/api/action/updateSwellPoints",
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            to: address,
+            useraddress: address,
+            newpoints: 100,
+            txnhash: `https://etherscan.io/tx/${transactionHash}`
           }),
         }
       );
@@ -341,8 +359,8 @@ const StakeForm = () => {
       // fetchBalances();
 
       // Update points and show success message
-      await updatePoints();
-      await fetchWinkpoints();
+      // await updatePoints();
+      // await fetchWinkpoints();
       setIsProcessing(false);
 
     } catch (error) {
@@ -361,6 +379,43 @@ const StakeForm = () => {
       setShowSuccessModal(false);
     } finally {
       setIsProcessing(false);
+    }
+  };
+
+  // Claim points on Swellchain
+  const handleClaim = async () => {
+    setIsClaiming(true);
+    setClaimError("");
+    try {
+      // Swellchain RPC and chainId
+      const SWELLCHAIN_RPC = "https://swell-mainnet.alt.technology";
+      // Use ethers.js to connect to Swellchain
+      const provider = new providers.JsonRpcProvider(SWELLCHAIN_RPC, 1923);
+      // Get signer from injected wallet (MetaMask etc.)
+      // This will prompt user to switch to Swellchain if not already
+      if (!window.ethereum) throw new Error("No injected wallet found");
+      await window.ethereum.request({
+        method: 'wallet_switchEthereumChain',
+        params: [{ chainId: '0x783' }], // 1923 in hex
+      });
+      const browserProvider = new providers.Web3Provider(window.ethereum);
+      const signer = browserProvider.getSigner();
+      const contract = new ethers.Contract(swellPointsContractAddress, swellPointsContractABI, signer);
+      const tx = await contract.claimPoints();
+      await tx.wait();
+      await updatePoints();
+      setShowSuccessModal(false);
+    } catch (error: any) {
+      if (error.code === 4001) {
+        setClaimError("User rejected transaction");
+      } else if (error.message) {
+        setClaimError(error.message);
+      } else {
+        setClaimError("Claim failed");
+      }
+      console.error('Claim failed:', error);
+    } finally {
+      setIsClaiming(false);
     }
   };
 
@@ -407,6 +462,9 @@ const StakeForm = () => {
         onClose={() => handleModalClose()}
         transactionHash={transactionHash}
         isProcessing={isProcessing}
+        onClaim={handleClaim}
+        isClaiming={isClaiming}
+        claimError={claimError}
       />
       <div className="bg-white/80 backdrop-blur-sm p-6 border border-gray-200 rounded-xl min-w-[430px] max-w-[450px] mx-auto space-y-3 text-xs shadow-lg">
         <div className="flex justify-between items-center">
