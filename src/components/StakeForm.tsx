@@ -58,7 +58,7 @@ const SuccessModal = ({ isOpen, transactionHash, isProcessing, onClaim, isClaimi
                   {isClaiming ? (
                     <span className="flex items-center gap-2"><span className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" /> Claiming...</span>
                   ) : (
-                    'Claim Transaction'
+                    'Claim Points'
                   )}
                 </button>
                 <button
@@ -328,15 +328,17 @@ const handleClaim = async () => {
   setIsClaiming(true);
   setClaimError("");
   try {
-    // Get user address first
-    const provider = new providers.Web3Provider(window.ethereum);
-    const signer = provider.getSigner();
+    
 
     // Switch to Swellchain if needed
     await window.ethereum.request({
       method: 'wallet_switchEthereumChain',
       params: [{ chainId: '0x783' }], // 1923 in hex
     });
+
+    // Get user address first
+    const provider = new providers.Web3Provider(window.ethereum);
+    const signer = provider.getSigner();
 
     // Initialize contract
     const contract = new ethers.Contract(
