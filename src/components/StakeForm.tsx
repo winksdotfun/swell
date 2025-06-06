@@ -28,7 +28,7 @@ const SuccessModal = ({ isOpen, transactionHash, isProcessing, onClaim, isClaimi
           {isProcessing ? (
             <>
               <div className="animate-spin">
-                <img src="/assets/icons/sweth.svg" alt="swETH" className="w-16 h-16" />
+                <img src="/assets/icons/rswell-icon.webp" alt="rSWELL" className="w-16 h-16" />
               </div>
               <h3 className="text-xl font-bold text-gray-800">Processing Transaction</h3>
               <p className="text-gray-600 text-center">

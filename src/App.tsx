@@ -18,7 +18,7 @@ function App() {
       <div className="h-screen flex justify-center items-center outfit-font bg-[#0a0a0a]">
         <div className="flex flex-col items-center gap-4">
           <div className="animate-spin">
-            <img src="/assets/icons/sweth.svg" alt="swETH" className="w-16 h-16" />
+            <img src="/assets/icons/rswell-icon.webp" alt="rSWELL" className="w-16 h-16" />
           </div>
           <p className="text-white/60">Loading...</p>
         </div>
