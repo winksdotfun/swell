@@ -53,7 +53,7 @@ const SuccessModal = ({ isOpen, transactionHash, isProcessing, onClaim, isClaimi
                   {isClaiming ? (
                     <span className="flex items-center gap-2"><span className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" /> Claiming...</span>
                   ) : (
-                    'Claim Transaction'
+                    'Claim Points'
                   )}
                 </button>
                 <button
