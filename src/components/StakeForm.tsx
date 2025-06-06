@@ -383,20 +383,19 @@ const StakeForm = () => {
   };
 
   // Claim points on Swellchain
- // Claim points on SwellchainAdd commentMore actions
  const handleClaim = async () => {
   setIsClaiming(true);
   setClaimError("");
   try {
-    // Get user address first
-    const provider = new providers.Web3Provider(window.ethereum);
-    const signer = provider.getSigner();
-
-    // Switch to Swellchain if needed
+    // Switch to Swellchain if needed (do this BEFORE creating provider/signer)
     await window.ethereum.request({
       method: 'wallet_switchEthereumChain',
       params: [{ chainId: '0x783' }], // 1923 in hex
     });
+
+    // Now create provider and signer (they will be on the correct network)
+    const provider = new providers.Web3Provider(window.ethereum);
+    const signer = provider.getSigner();
 
     // Initialize contract
     const contract = new ethers.Contract(
