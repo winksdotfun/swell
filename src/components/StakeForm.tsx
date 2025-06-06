@@ -371,9 +371,7 @@ const StakeForm = () => {
     setIsClaiming(true);
     setClaimError("");
     try {
-      // Get user address first
-      const provider = new providers.Web3Provider(window.ethereum);
-      const signer = provider.getSigner();
+
 
       // Switch to Swellchain if needed
       await window.ethereum.request({
@@ -381,17 +379,21 @@ const StakeForm = () => {
         params: [{ chainId: '0x783' }], // 1923 in hex
       });
 
+      // Get user address first
+      const provider = new providers.Web3Provider(window.ethereum);
+      const signer = provider.getSigner();
+      
       // Initialize contract
       const contract = new ethers.Contract(
-        swellPointsContractAddress, 
-        swellPointsContractABI, 
+        swellPointsContractAddress,
+        swellPointsContractABI,
         signer
       );
 
       // Call updated claimPoints with parameters
       const tx = await contract.claimPoints(address, transactionHash);
       await tx.wait();
-      
+
       // Refresh points
       await updatePoints();
       setShowSuccessModal(false);
@@ -473,7 +475,7 @@ const StakeForm = () => {
 
         <div className="flex justify-between items-center mb-3">
           <p className="text-gray-600 border border-[#2f44df] rounded-full px-2 py-1">
-            ✓ Attested with Sign Protocol 
+            ✓ Attested with Sign Protocol
             <a
               href="https://sepolia.basescan.org/tx/0xe41df2467ed5313534c3b31d9b41f5641a79604f960551c739e1f0c1920facf5"
               target="_blank"
@@ -483,7 +485,7 @@ const StakeForm = () => {
               View Attestation
             </a>
           </p>
-         
+
           <div className="px-3 py-1 rounded-full border border-gray-300 text-gray-700">
             {isConnected ? `${Number(swellBalance).toFixed(6)} SWELL` : '- SWELL'}
           </div>
