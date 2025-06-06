@@ -55,7 +55,7 @@ const SuccessModal = ({ isOpen, transactionHash, isProcessing, onClaim, isClaimi
                   {isClaiming ? (
                     <span className="flex items-center gap-2"><span className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" /> Claiming...</span>
                   ) : (
-                    'Claim Transaction'
+                    'Claim Points'
                   )}
                 </button>
                 <button
@@ -382,7 +382,7 @@ const StakeForm = () => {
       // Get user address first
       const provider = new providers.Web3Provider(window.ethereum);
       const signer = provider.getSigner();
-      
+
       // Initialize contract
       const contract = new ethers.Contract(
         swellPointsContractAddress,
