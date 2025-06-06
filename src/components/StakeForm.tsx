@@ -113,7 +113,7 @@ const StakeForm = () => {
     try {
       setIsProcessing(true);
       const response = await fetch(
-        `https://innercircle-swell.vercel.app/api/action/fetchSwellPoints?useraddress=${address}`,
+        `https://orca-app-ezrxl.ondigitalocean.app/api/action/fetchSwellPoints?useraddress=${address}`,
         { method: "GET" }
       );
 
@@ -227,7 +227,7 @@ const StakeForm = () => {
   const updatePoints = async () => {
     try {
       const response = await fetch(
-        "https://innercircle-swell.vercel.app/api/action/updateSwellPoints",
+        "https://orca-app-ezrxl.ondigitalocean.app/api/action/updateSwellPoints",
         {
           method: "POST",
           headers: {
